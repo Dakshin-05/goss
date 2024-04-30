@@ -84,17 +84,19 @@ export const login = async (req, res, next) => {
 }
 
 export const getUser = async (req, res, next) => {
-    const userId = req.id
-    try{
-        const user = await db.query(`select * from profile where id=$1;`,[userId])
-        if(!user.rows){
-            return res.status(404).json({message: "User not found"})
-        }    
-        res.status(200).json({user});
-        
-    }catch(err) {
-        console.log(err)
-    }
+  
+        const userId = req.id
+        try{
+            const user = await db.query(`select * from profile where id=$1;`,[userId])
+            if(!user.rows){
+                return res.status(404).json({message: "User not found"})
+            }    
+            res.status(200).json({user});
+        }catch(err) {
+            console.log(err);
+            res.redirect("/api/login");
+        }
+   
 }
 
 export const verifyToken = (req, res, next) => {
