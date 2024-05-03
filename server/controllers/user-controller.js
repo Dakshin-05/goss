@@ -39,6 +39,7 @@ export const signUp = async (req, res, next) =>{
 
 export const login = async (req, res, next) => {
     const { userNameOrEmail, password} = req.body;
+    console.log(req)
     try{
         console.log(userNameOrEmail, password);
         const existingUser =  await db.query(`select * from profile where username=$1 or email=$1`,[userNameOrEmail]) 
@@ -58,7 +59,7 @@ export const login = async (req, res, next) => {
 
         res.cookie(String(user.id), token, {
             path: '/',
-            expires: new Date(Date.now() + 30000),
+            expires: new Date(Date.now() + 120000),
             httpOnly: true,
             sameSite: 'lax'
         })
@@ -66,7 +67,9 @@ export const login = async (req, res, next) => {
         console.log("token: "+ token);
 
         
-        return res.status(200).json({message:"You are successfully logged in"})
+        // return res.status(200).json({message:"You are successfully logged in", userId: user.id})
+        console.log(user.id)
+        return res.redirect(`user/${user.id}`)
 
     }catch(err){
         console.log(err)
@@ -75,15 +78,24 @@ export const login = async (req, res, next) => {
 
 export const getUser = async (req, res, next) => {
         const userId = req.id
+        console.log(req.params);
+
+        if(req.params.userId !== req.id){
+            return res.status(403).json({message: "User not allowed to access this route"});
+        }
+
         try{
             const user = await db.query(`select * from profile where id=$1;`,[userId])
             if(!user.rows){
                 return res.status(404).json({message: "User not found"})
             }    
-            res.status(200).json({user: user.rows[0]});
+            // return res.render("home.ejs", {
+            //     user:user.rows[0]
+            // })
+            return res.status(200).json({user: user.rows[0]});
         }catch(err) {
             console.log(err);
-            res.redirect("/api/login");
+            res.redirect("/login");
         }
    
 }

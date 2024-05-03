@@ -7,7 +7,7 @@ export const handleGoogleLogin = (req, res, next) => {
 
         res.cookie(String(user.id), token, {
             path: '/',
-            expires: new Date(Date.now() + 30000),
+            expires: new Date(Date.now() + 120000),
             httpOnly: true,
             sameSite: 'lax'
         })

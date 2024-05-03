@@ -6,6 +6,13 @@
     <title>Document</title>
 </head>
 <body>
-    <a href="/api/auth/google">sign in with google</a>
+    <a href="/api/auth/google">login</a>
+    <form action="/api/login" method="post">
+        <label for="userNameOrEmail">Username or email</label>
+        <input type="text" name="userNameOrEmail">
+        <label for="password">password</label>
+        <input type="text" name="password">
+        <input type="submit" value="submit">
+    </form>
 </body>
 </html>

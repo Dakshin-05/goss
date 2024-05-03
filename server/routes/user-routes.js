@@ -5,28 +5,28 @@ import { handleGoogleLogin } from '../auth/user-auth-controller.js';
 import "../passport/index.js"
 
 
-const router = express.Router();
+const userRouter = express.Router();
 
 
-router.post("/signup", signUp);
-router.post("/login", login);
-router.get('/user', verifyToken, getUser);
-router.get('/refresh', refreshToken, verifyToken, getUser);
-router.post('/logout', verifyToken, logout);
+userRouter.post("/signup", signUp);
+userRouter.post("/login", login);
+userRouter.get('/refresh', refreshToken, verifyToken, getUser);
+userRouter.post('/logout', verifyToken, logout);
 
-router.get('/auth/google',
+userRouter.get('/auth/google',
 passport.authenticate("google", {
     scope: ["profile", "email"]
 })
 )
 
-router.get("/auth/google/callback", 
+userRouter.get("/auth/google/callback", 
 passport.authenticate("google", {
     failureRedirect: "/api/login"
 }),
 
-    handleGoogleLogin,
-    
+handleGoogleLogin,
+
 )
 
-export default router;
+userRouter.get('/user/:userId', verifyToken, getUser);
+export default userRouter;

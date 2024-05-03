@@ -6,16 +6,35 @@ import passport from "passport";
 import session from "express-session";
 import cors from 'cors';
 import cookieParser from "cookie-parser";
+import friendRequestRouter from "./routes/friend-request-routes.js";
+import { initializeSocketIO } from "./socket/index.js";
+import { Server } from "socket.io";
+import { createServer } from "http";
+import chatRouter from "./routes/chat-routes.js";
 
 configDotenv();
 
 const app = new express();
+
+const httpServer = createServer(app);
+
+const io = new Server(httpServer, {
+    pingTimeout: 60000,
+    cors: {
+        origin: 'http://localhost:5173',
+        credentials: true
+    }
+});
+
+app.set("io", io);
+
 app.use(cors({
     origin: 'http://localhost:5173',
     credentials: true
 }));
 await dbConnect();
 app.use(express.json());
+app.use(express.urlencoded({extended: true, limit: "16kb"}))
 app.use(
     session({
         secret: process.env.SESSION_SECRET,
@@ -27,6 +46,8 @@ app.use(
     })
 )
 app.use("/api",userRouter);
+app.use("/api",friendRequestRouter);
+app.use("/api/user/:userId", chatRouter)
 app.use(passport.initialize())
 app.use(passport.session())
 
