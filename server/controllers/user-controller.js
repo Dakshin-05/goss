@@ -38,15 +38,15 @@ export const signUp = async (req, res, next) =>{
 }
 
 export const login = async (req, res, next) => {
-    const {username, email, password} = req.body;
+    const { userNameOrEmail, password} = req.body;
     try{
-        console.log(username, email, password);
-        const existingUser = username ? await db.query(`select * from profile where username=$1;`,[username]) : await db.query(`select * from profile where email=$1;`,[email])
+        console.log(userNameOrEmail, password);
+        const existingUser =  await db.query(`select * from profile where username=$1 or email=$1`,[userNameOrEmail]) 
         console.log(existingUser)
         if(existingUser.rows.length === 0){
             res.status(400).json({message:"Username do not exist!!"});
-            res.redirect("/api/signup");
-            return;
+            // res.redirect("/api/signup");
+            return ;
         }
         const user = existingUser.rows[0];
 
@@ -66,7 +66,7 @@ export const login = async (req, res, next) => {
         console.log("token: "+ token);
 
         
-        res.status(200).json({message:"You are successfully logged in"})
+        return res.status(200).json({message:"You are successfully logged in"})
 
     }catch(err){
         console.log(err)
@@ -80,7 +80,7 @@ export const getUser = async (req, res, next) => {
             if(!user.rows){
                 return res.status(404).json({message: "User not found"})
             }    
-            res.status(200).json({user});
+            res.status(200).json({user: user.rows[0]});
         }catch(err) {
             console.log(err);
             res.redirect("/api/login");
@@ -160,7 +160,7 @@ export const logout = async (req, res, next) =>{
         return res.status(400).json({message: "Cannot find the token"});
     }
 
-    jwt.verify(String(prevToken), jwtSecretKey, (err, user) => {
+    jwt.verify(String(prevToken), process.env.ACCESS_TOKEN_SECRET, (err, user) => {
         if(err){
             console.log(err);
             return res.status(403).json({message: "Authentication failed"})

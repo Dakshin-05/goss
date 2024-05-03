@@ -10,11 +10,9 @@ const router = express.Router();
 
 router.post("/signup", signUp);
 router.post("/login", login);
-router.get('/user', verifyToken, (req, res)=>{
-    res.send("login success")
-});
+router.get('/user', verifyToken, getUser);
 router.get('/refresh', refreshToken, verifyToken, getUser);
-router.get('/logout', verifyToken, logout);
+router.post('/logout', verifyToken, logout);
 
 router.get('/auth/google',
 passport.authenticate("google", {
