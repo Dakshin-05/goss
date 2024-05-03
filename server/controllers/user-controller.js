@@ -1,8 +1,7 @@
 import {db} from "../db/index.js";
+import { generateAccessToken,generateRefreshToken } from "../utils/jwtSign.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-
-const jwtSecretKey = "gosssecret";
 
 const saltRounds = 5;
 
@@ -20,17 +19,12 @@ export const signUp = async (req, res, next) =>{
         }
 
         const queryStr1 = `INSERT INTO profile(username, name, email, password) values($1, $2, $3, $4)`;
-        const queryStr2 = `INSERT INTO profile(username, email, password) values($1, $2, $3)`;
         bcrypt.hash(password, saltRounds, async(err, hash) => {
             if(err){
                 console.log(err);
-            }else if(name !== ""){
-                await db.query(
-                    queryStr1, [username, name, email, hash]
-                )
             }else{
                 await db.query(
-                    queryStr2, [username, email, hash]
+                    queryStr1, [username, name, email, hash]
                 )
             }
         })
@@ -46,7 +40,7 @@ export const signUp = async (req, res, next) =>{
 export const login = async (req, res, next) => {
     const {username, email, password} = req.body;
     try{
-        console.log(username, email, password)
+        console.log(username, email, password);
         const existingUser = username ? await db.query(`select * from profile where username=$1;`,[username]) : await db.query(`select * from profile where email=$1;`,[email])
         console.log(existingUser)
         if(existingUser.rows.length === 0){
@@ -54,19 +48,15 @@ export const login = async (req, res, next) => {
             res.redirect("/api/signup");
             return;
         }
-        const {id:userId, password:userPassword} = existingUser.rows[0];
+        const user = existingUser.rows[0];
 
-        if(!bcrypt.compareSync(password, userPassword)){
+        if(!bcrypt.compareSync(password, user.password)){
             return res.status(400).json({message:"Incorrect email or password"});
         }
 
-        const token = jwt.sign({
-            id: userId,
-        }, jwtSecretKey, {
-            expiresIn: "60s"
-        })
+        const token = generateAccessToken(user);
 
-        res.cookie(String(userId), token, {
+        res.cookie(String(user.id), token, {
             path: '/',
             expires: new Date(Date.now() + 30000),
             httpOnly: true,
@@ -84,7 +74,6 @@ export const login = async (req, res, next) => {
 }
 
 export const getUser = async (req, res, next) => {
-  
         const userId = req.id
         try{
             const user = await db.query(`select * from profile where id=$1;`,[userId])
@@ -101,13 +90,18 @@ export const getUser = async (req, res, next) => {
 
 export const verifyToken = (req, res, next) => {
     const cookie = req.headers.cookie;
-    const token = cookie.split("=")[1];
+    const token = cookie.split(';').filter((item) => {
+        const data = item.trim().split('=');
+        console.log(data)
+        if(data[0] !== "connect.sid") 
+        return data[1];
+    })[0].split('=')[1];
 
     if(!token){
         return res.status(404).json({message:"Token not found"})
     }
 
-    jwt.verify(String(token), jwtSecretKey, (err, user)=>{
+    jwt.verify(String(token), process.env.ACCESS_TOKEN_SECRET, (err, user)=>{
         if(err){
             return res.status(400).json({message: "Invalid token"})
         }
@@ -118,22 +112,25 @@ export const verifyToken = (req, res, next) => {
 
 export const refreshToken = (req, res, next)=> {
     const cookie = req.headers.cookie;
-    const previousToken = cookie.split('=')[1];
+    const previousToken  = cookie.split(';').filter((item) => {
+        const data = item.trim().split('=');
+        console.log(data)
+        if(data[0] !== "connect.sid") 
+        return data[1];
+    })[0].split('=')[1];
+    console.log(previousToken)
+
     if(!previousToken){
         return res.status(400).json({message:"Cannot find the token"});
     }
-    jwt.verify(String(previousToken), jwtSecretKey, (err, user)=>{
+    jwt.verify(String(previousToken), process.env.ACCESS_TOKEN_SECRET, (err, user)=>{
         if(err){
             console.log(err);
             return res.status(403).json({message:"Authentication failed"})
         }
         res.clearCookie(`${user.id}`);
         res.cookie[`${user.id}`] = "";
-        const token = jwt.sign({
-            id: user.id,
-        }, jwtSecretKey, {
-            expiresIn: "60s"
-        })
+        const token = generateRefreshToken(user);
         
         console.log("refreshed token : " + token);
 
@@ -150,11 +147,15 @@ export const refreshToken = (req, res, next)=> {
 
 }
 
-
 export const logout = async (req, res, next) =>{
     const cookie = req.headers.cookie;
-    const prevToken = cookie.split('=')[1];
-
+    const prevToken = cookie.split(';').filter((item) => {
+        const data = item.trim().split('=');
+        console.log(data)
+        if(data[0] !== "connect.sid") 
+        return data[1];
+    })[0].split('=')[1];
+    
     if(!prevToken){
         return res.status(400).json({message: "Cannot find the token"});
     }

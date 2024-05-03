@@ -1,4 +1,5 @@
 import passport from "passport";
+import {db} from "../db/index.js"
 import { Strategy as GoogleStrategy } from "passport-google-oauth2";
 
 // passport.use(
@@ -38,10 +39,14 @@ passport.use(
             try{
                 const result = await db.query("SELECT * FROM profile WHERE email=$1", [profile.email]);
                 if(result.rows.length === 0){
-                    const newResult = await db.query("INSERT INTO profile (username, name, email, password) VALUES ($1, $2, $3, $4) RETURNING *", ["user", "name", profile.email, "google"]);
+                    const username = profile.email.split('@')[0];
+                    const {displayName, email, _json:{sub:password}} = profile;
+                    const newResult = await db.query("INSERT INTO profile (username, name, email, password) VALUES ($1, $2, $3, $4) RETURNING id, username,name, email", [username, displayName, email, password]);
                     const newUser = newResult.rows[0];
+                    console.log(newUser)
                     cb(null, newUser)
                 }else{
+                    console.log(result.rows[0])
                     cb(null, result.rows[0]);
                 }
             }catch(err){
