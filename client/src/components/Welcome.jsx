@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { useEffect, useState } from 'react'
+import Chat from './Chat';
 axios.defaults.withCredentials = true;
 let firstRender = true;
 const Welcome = () => {
@@ -13,6 +14,7 @@ const Welcome = () => {
         return data;
     }
     const sendRequest = async () => {
+        
         const res = await axios.get('http://localhost:5000/api/user', {
             withCredentials: true,
         }).catch(err => console.log(err))
@@ -36,7 +38,7 @@ const Welcome = () => {
     },[])
   return (
     <div>
-        {user && <h1>Welcome {user.username}</h1>}
+        {user && <Chat/>}
     </div>
   )
 }

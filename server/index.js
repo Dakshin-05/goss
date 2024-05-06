@@ -11,6 +11,7 @@ import { initializeSocketIO } from "./socket/index.js";
 import { Server } from "socket.io";
 import { createServer } from "http";
 import chatRouter from "./routes/chat-routes.js";
+import messageRouter from "./routes/message-routes.js"
 
 configDotenv();
 
@@ -48,6 +49,7 @@ app.use(
 app.use("/api",userRouter);
 app.use("/api",friendRequestRouter);
 app.use("/api/user/:userId", chatRouter)
+app.use("/api/user/:conversationId", messageRouter);
 app.use(passport.initialize())
 app.use(passport.session())
 

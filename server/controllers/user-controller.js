@@ -1,14 +1,14 @@
 import {db} from "../db/index.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 import { generateAccessToken,generateRefreshToken } from "../utils/jwtSign.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
 const saltRounds = 5;
 
-export const signUp = async (req, res, next) =>{
-    const {username, password, name, email} = req.body;
+export const signUp = asyncHandler( async (req, res, next) =>{
 
-    console.log(req.body);
+    const {username, password, name, email} = req.body;
     
     try{
         const existingUser = await db.query(`select * from test where username=$1;`,[username])
@@ -35,9 +35,9 @@ export const signUp = async (req, res, next) =>{
 
 
     res.status(200).json({message: "user created successfully!!"});
-}
+})
 
-export const login = async (req, res, next) => {
+export const login = asyncHandler( async (req, res, next) => {
     const { userNameOrEmail, password} = req.body;
     console.log(req)
     try{
@@ -45,14 +45,16 @@ export const login = async (req, res, next) => {
         const existingUser =  await db.query(`select * from profile where username=$1 or email=$1`,[userNameOrEmail]) 
         console.log(existingUser)
         if(existingUser.rows.length === 0){
-            res.status(400).json({message:"Username do not exist!!"});
+            throw new ApiError (400, "Username do not exist!!")
+            // res.status(400).json({message:"Username do not exist!!"});
             // res.redirect("/api/signup");
             return ;
         }
         const user = existingUser.rows[0];
 
         if(!bcrypt.compareSync(password, user.password)){
-            return res.status(400).json({message:"Incorrect email or password"});
+            throw new ApiError(400, "Incorrect email or password")
+            // return res.status(400).json({message:"Incorrect email or password"});
         }
 
         const token = generateAccessToken(user);
@@ -74,9 +76,9 @@ export const login = async (req, res, next) => {
     }catch(err){
         console.log(err)
     }
-}
+})
 
-export const getUser = async (req, res, next) => {
+export const getUser = asyncHandler(async (req, res, next) => {
         const userId = req.id
         console.log(req.params);
 
@@ -98,9 +100,9 @@ export const getUser = async (req, res, next) => {
             res.redirect("/login");
         }
    
-}
+})
 
-export const verifyToken = (req, res, next) => {
+export const verifyToken = asyncHandler((req, res, next) => {
     const cookie = req.headers.cookie;
     const token = cookie.split(';').filter((item) => {
         const data = item.trim().split('=');
@@ -120,9 +122,9 @@ export const verifyToken = (req, res, next) => {
         req.id = user.id;
         next();
     })
-}
+})
 
-export const refreshToken = (req, res, next)=> {
+export const refreshToken = asyncHandler((req, res, next)=> {
     const cookie = req.headers.cookie;
     const previousToken  = cookie.split(';').filter((item) => {
         const data = item.trim().split('=');
@@ -157,9 +159,9 @@ export const refreshToken = (req, res, next)=> {
         next();
     })
 
-}
+})
 
-export const logout = async (req, res, next) =>{
+export const logout = asyncHandler(async (req, res, next) =>{
     const cookie = req.headers.cookie;
     const prevToken = cookie.split(';').filter((item) => {
         const data = item.trim().split('=');
@@ -183,4 +185,4 @@ export const logout = async (req, res, next) =>{
 
         return res.status(200).json({message: "Successfully logged out"})
     });
-}
+})

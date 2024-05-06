@@ -1,6 +1,7 @@
 import {db} from "../db/index.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
-export const makeFriendRequest = async (req, res, next) => {
+export const makeFriendRequest = asyncHandler(async (req, res, next) => {
     const {requestedUsername} = req.body;
     console.log(req.id)
     if(req.params.userId !== req.id){
@@ -22,9 +23,9 @@ export const makeFriendRequest = async (req, res, next) => {
         console.log(err)
     }
 
-}
+})
 
-export const handleFriendRequest = async (req, res, next) => {
+export const handleFriendRequest = asyncHandler(async (req, res, next) => {
     const {fromId, toId, status} = req.body;
     if(req.params.userId !== req.id){
         return res.status(403).json({message: "User not allowed to access this route"});
@@ -41,9 +42,9 @@ export const handleFriendRequest = async (req, res, next) => {
         console.log(err)
     }
 
-}
+})
 
-export const showAllFriends = async (req, res, next) => {
+export const showAllFriends =  asyncHandler(async (req, res, next) => {
     if(req.params.userId !== req.id){
         return res.status(403).json({message: "User not allowed to access this route"});
     }
@@ -53,9 +54,9 @@ export const showAllFriends = async (req, res, next) => {
     }catch(err){
         console.log(err)
     }
-}
+})
 
-export const showBlockedUsers = async (req, res, next) => {
+export const showBlockedUsers = asyncHandler(async (req, res, next) => {
     if(req.params.userId !== req.id){
         return res.status(403).json({message: "User not allowed to access this route"});
     }
@@ -65,9 +66,9 @@ export const showBlockedUsers = async (req, res, next) => {
     }catch(err){
         console.log(err)
     }
-}
+})
 
-export const showPendingRequests = async (req, res, next) => {
+export const showPendingRequests = asyncHandler( async (req, res, next) => {
     if(req.params.userId !== req.id){
         return res.status(403).json({message: "User not allowed to access this route"});
     }
@@ -78,5 +79,5 @@ export const showPendingRequests = async (req, res, next) => {
     }catch(err){
         console.log(err)
     }
-}
+})
 

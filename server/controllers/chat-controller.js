@@ -1,8 +1,10 @@
 import { ChatEventEnum } from "../constants.js";
 import { db } from "../db/index.js";
 import { emitSocketEvent } from "../socket/index.js";
+import { ApiResponse } from "../utils/apiResponse.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
-export const createOrGetOneOnOneChat = async (req, res, next) => {
+export const createOrGetOneOnOneChat = asyncHandler( async (req, res, next) => {
     const {receiverId} = req.params;
     console.log(receiverId)
     try{
@@ -17,7 +19,7 @@ export const createOrGetOneOnOneChat = async (req, res, next) => {
         try{
             const chat = await db.query("select * from conversation where (member_one_id = $1 and member_two_id = $2) or (member_one_id = $2 and member_two_id = $1)", [req.id, receiverId]);
             if(chat.rows.length !== 0){
-                return res.status(200).json({message:"chat retrievekkd successfully", chat: chat.rows[0]})
+                return res.status(200).json({message:"chat retrieved successfully", chat: chat.rows[0]})
             }
             try{
                 const newChat = await db.query("insert into conversation (member_one_id, member_two_id ) values ($1, $2) returning * ", [req.id, receiverId])
@@ -25,7 +27,7 @@ export const createOrGetOneOnOneChat = async (req, res, next) => {
                 console.log(newChat)
     
                 emitSocketEvent(req, receiverId, ChatEventEnum.NEW_CHAT_EVENT, payload )
-                return res.status(201).json({message:"chat retrieveld successfully", payload:payload})
+                return res.status(201).json({message:"chat retrieved successfully", payload:payload})
             }catch(err){
                 console.log(err)
             }
@@ -39,7 +41,13 @@ export const createOrGetOneOnOneChat = async (req, res, next) => {
     }catch(err){
         console.log(err)
     }
-}
+})
 
-export const getAllChats = async (req, res) => {
-  };
+export const getAllChats = asyncHandler(async (req, res, next) => {
+    try{
+        const result = await db.query("select * from conversation where member_one_id=$1 or member_two_id=$1", [req.id]);
+        return res.status(200).json({chats: result.rows || [], message: "User chats fetched successfully"})
+    }catch(err){
+        console.log(err);
+    }
+  });
