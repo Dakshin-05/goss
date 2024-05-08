@@ -1,12 +1,11 @@
 import {Server, Socket} from "socket.io";
-import { AvailableChatEvents, ChatEventEnum } from "../constants.js";
+import { ChatEventEnum } from "../constants.js";
 import { db } from "../db/index.js";
 
 const mountJoinChatEvent = (socket) => {
     socket.on(ChatEventEnum.JOIN_CHAT_EVENT, (chatId)=>{
-        console.log(`User joined the chat 🤝. chatId: `, chatId);
+        console.log(`User joined the chat. chatId: `, chatId);
         socket.join(chatId)
-
     })
 }
 
@@ -24,7 +23,6 @@ const mountParticipantStoppedTypingEvent = (socket) => {
 
 export const initializeSocketIO = (io) => {
     return io.on("connection", async(socket)=> {
-        console.log(socket);
         try{
             const cookie = cookie.parse(socket.handshake.headers?.cookie || "");
             const token = cookie.split(';').filter((item) => {

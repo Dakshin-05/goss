@@ -1,14 +1,16 @@
-import express from 'express';
-import {verifyToken} from '../controllers/user-controller.js';
+import {Router} from 'express';
 import { handleFriendRequest, makeFriendRequest, showAllFriends, showBlockedUsers, showPendingRequests } from '../controllers/friend-request-controller.js';
+import { verifyJWT } from '../middlewares/auth-middlewares.js';
 
 
-const friendRequestRouter = express.Router();
+const router = Router();
 
-friendRequestRouter.post('/user/:userId/makeFriendRequest', verifyToken, makeFriendRequest );
-friendRequestRouter.post('/user/:userId/handleFriendRequest', verifyToken, handleFriendRequest);
-friendRequestRouter.get('/user/:userId/showAllFriends', verifyToken, showAllFriends);
-friendRequestRouter.get('/user/:userId/showBlockedUsers', verifyToken, showBlockedUsers);
-friendRequestRouter.get('/user/:userId/showPendingRequests', verifyToken, showPendingRequests);
+router.use(verifyJWT);
 
-export default friendRequestRouter;
+router.post('/makeFriendRequest', makeFriendRequest );
+router.post('/handleFriendRequest', handleFriendRequest);
+router.get('/showAllFriends', showAllFriends);
+router.get('/showBlockedUsers', showBlockedUsers);
+router.get('/showPendingRequests', showPendingRequests);
+
+export default router;

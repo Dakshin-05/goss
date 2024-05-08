@@ -1,10 +1,9 @@
 import pg from 'pg'
 import { configDotenv } from 'dotenv'
 
-const { Client } = pg
 configDotenv();
 
-export const db = new Client({
+export const db = new pg.Client({
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     database: process.env.DB_DATABASE,
