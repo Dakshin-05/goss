@@ -81,3 +81,15 @@ create table direct_message (id uuid not null default uuid_generate_v4(),
 	foreign key (member_two_id) references profile(id)
 		
 	);
+
+	CREATE OR REPLACE VIEW public.friends
+ AS
+ SELECT member_one_id AS user_id,
+    member_two_id AS friend_id,
+    created_at AS friends_from
+   FROM chat
+	where deleted_at is not null;
+
+
+ALTER TABLE public.friends
+    OWNER TO postgres;

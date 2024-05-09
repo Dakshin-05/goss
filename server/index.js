@@ -12,6 +12,7 @@ import { Server } from "socket.io";
 import { createServer } from "http";
 import chatRouter from "./routes/chat/chat-routes.js";
 import messageRouter from "./routes/message-routes.js"
+import {errorHandler} from "./middlewares/error-middlewares.js"
 
 configDotenv();
 
@@ -55,7 +56,7 @@ app.use("/api",userRouter);
 app.use("/api/user/:userId",friendRequestRouter);
 app.use("/api/user/:userId", chatRouter)
 app.use("/api/user/:userId/:chatId", messageRouter);
-
+app.use(errorHandler)
 app.listen(process.env.PORT, (req, res) => {
     console.log(`Server is listening on Port: ${process.env.PORT}`);
 });

@@ -4,7 +4,7 @@ import { Container, Typography, Button, TextField } from "@mui/material";
 import { ChatEventEnum } from "../constants";
 
 function Chat() {
-  const socket = useMemo(() => io("localhost:5000"), []);
+  const socket = useMemo(() => io("http://localhost:5000"), []);
 
   const [message, setMessage] = useState("");
   const [room, setRoom] = useState("");

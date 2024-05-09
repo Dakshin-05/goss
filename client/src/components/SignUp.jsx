@@ -32,7 +32,7 @@ function Copyright(props) {
 
 const defaultTheme = createTheme();
 
-export default function SignUp() {
+export const SignUp = () => {
   const history = useNavigate();
   const [inputs, setInputs] = useState({
       name: "",

@@ -47,7 +47,7 @@ export default function Login() {
 //   };
 const history = useNavigate();
     const [inputs, setInputs] = useState({
-        userNameOrEmail: "",
+        usernameOrEmail: "",
         password: ""
     });
     const dispatch = useDispatch();
@@ -58,7 +58,7 @@ const history = useNavigate();
 
     const sendRequest = async () => {
         const res = await axios.post('http://localhost:5000/api/login', {
-            userNameOrEmail: inputs.userNameOrEmail,
+            usernameOrEmail: inputs.usernameOrEmail,
             password: inputs.password,
         })
         .catch((err)=>console.log(err));
@@ -99,9 +99,9 @@ const history = useNavigate();
               margin="normal"
               required
               fullWidth
-              id="userNameOrEmail"
+              id="usernameOrEmail"
               label="UserName or Email Address"
-              name="userNameOrEmail"
+              name="usernameOrEmail"
               onChange={handleChange}
               autoFocus
             />
