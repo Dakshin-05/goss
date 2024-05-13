@@ -1,25 +1,70 @@
 import { ChatEventEnum } from "../constants.js";
+import { db } from "../db/index.js";
 import { emitSocketEvent } from "../socket/index.js";
+import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-export const sendMessage = asyncHandler(async(req, res)=>{
-    const conversationId = req.params;
-    const content = req.body;
-    if(!content){
-        throw new ApiError(400, "message content is required");
+export const sendMessage = asyncHandler(async (req, res) => {
+    const { chatId } = req.params;
+    const { content } = req.body;
+
+    console.log(content);
+    if (!content) {
+        return res.status(400).json(new ApiError(400, {}, "Message content is required"));
     }
-    const selectedConversationQuery = await db.query("select * from conversation where id=$1", [conversationId]);
 
-    const selectedConversation = selectedConversationQuery.rows[0];
+    try {
+        const chatQuery = await db.query("SELECT * FROM chat WHERE id = $1", [chatId]);
+        
+        if (chatQuery.rowCount === 0) {
+            return res.status(404).json(new ApiError(404, {}, "Chat does not exist"));
+        }
+        
+        const chat = chatQuery.rows[0];
+        const recipientId = chat.member_one_id === req.user.id ? chat.member_two_id : chat.member_one_id;
 
-    if(!selectedConversation){
-        throw new ApiError(404, "chat does not exist");
+        try {
+            const message = await db.query("INSERT INTO message (chat_id, sender_id, content) VALUES ($1, $2, $3) RETURNING *", [chat.id, req.user.id, content]);
+           
+            emitSocketEvent(req, )
+            emitSocketEvent(req, recipientId, ChatEventEnum.MESSAGE_RECEIVED_EVENT, message.rows[0]);
+        
+            return res.status(200).json(new ApiResponse(200, { message: message.rows[0] }, "Message saved successfully"));
+        } catch (err) {
+            return res.status(500).json(new ApiResponse(500, {}, "Something went wrong"));
+        }
+    } catch (err) {
+        return res.status(500).json(new ApiResponse(500, {}, "Something went wrong"));
     }
-    const message = await db.query("insert into message (conversation_id, sender_id, content returning *", [selectedConversation, req.id, content]);
+});
 
-    emitSocketEvent(req, selectedConversation.member_one_id === req.id ? selectedConversation.member_two_id : req.id, ChatEventEnum.MESSAGE_RECEIVED_EVENT, message);
 
-    return res.status(200).json(new ApiResponse(201, message, "message saved successfully"));
 
-})
+export const getMessages = asyncHandler( async(req, res, next) => {
+    const {chatId} = req.params;
+    if(req.params.userId !== req.user.id){
+        return res.status(403).json(new ApiError(403,{}, "User not allowed to access this route"));
+    }
+
+    try{
+        const chatQuery = await db.query("select * from chat where id=$1 and deleted_at is null", [chatId]);
+
+        if(chatQuery.rowCount === 0){
+            return res.status(404).json( new ApiResponse(404, {}, "You are not friends"))
+        }
+
+        try{
+            const messagesQuery = await db.query("select * from message where chat_id=$1 order by created_at", [chatId]);
+
+            return res.status(200).json( new ApiResponse(200, {messages: messagesQuery.rows}, "Chat messages fetched successfully"))
+
+        } catch(err) {
+            console.log(err)
+            return res.status(500).json( new ApiResponse(500, {}, "Something went wrong!!"))
+        }
+    } catch(err) {
+        console.log(err)
+        return res.status(500).json( new ApiResponse(500, {}, "Something went wrong!!"))
+    }
+  })

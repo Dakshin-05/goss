@@ -22,59 +22,56 @@ const generateAccessAndRefreshTokens = async (userId) => {
       await db.query("update profile set validate_before_save=false where id=$1", [userId]);
       return { accessToken, refreshToken };
     } catch (error) {
-        console.log(error);
-      throw new ApiError(
-        500,
-        "Something went wrong while generating the access token"
-      );
+      return res.status(500).json(new ApiError(500,  "Something went wrong!!"))
     }
   };
 
 export const signUp = asyncHandler( async (req, res) =>{
     const {username, password, name, email} = req.body;
+    console.log(username, password, name, email)
     try{
         const existingUser = await db.query(`select * from profile where username=$1`,[username])
         if(existingUser.rows.length !== 0){
-            throw new ApiError(409, "User with email or username already exists", []);
+            return res.status(409).json(ApiError(409, "User already exists"));
         }
         
         bcrypt.hash(password, saltRounds, async(err, hash) => {
             if(err){
-                console.log(err);
+              return res.status(500).json(new ApiError(500,  "Something went wrong!!"))
             }else{
                 try{
                     const createdUser = await db.query(
                         "INSERT INTO profile(username, name, email, password, validate_before_save) values($1, $2, $3, $4, $5) returning *", [username, name, email, hash, false]
                     )
                     if(!createdUser.rows.length){
-                        throw new ApiError(500, "Something went wrong while registering the user");
+                      return res.status(500).json(new ApiError(500, "Something went wrong while registering the user"));
                     }
                     return res.status(201).json(new ApiResponse(200, {user:createdUser.rows[0]}, "User registered successfully"))
                 }catch(err){
-                    throw new ApiError(500, "Something went wrong while registering the user");
+                  return res.status(500).json(new ApiError(500, "Something went wrong while registering the user"));
                 }
             }
         })
     } catch(err){
-        console.log(err);
+      return res.status(500).json(new ApiError(500, "Something went wrong while registering the user"));
     } 
 })
 
 export const login = asyncHandler( async (req, res) => {
     const { usernameOrEmail, password} = req.body;
     if(!usernameOrEmail) {
-        throw new ApiError(400, "Username or email is required");
+      return res.status(400).json( new ApiError(400, "Username or email is required"));
     }
     try{
         const userQuery =  await db.query(`select * from profile where username=$1 or email=$1`,[usernameOrEmail]) 
 
         if(userQuery.rows.length === 0){
-            throw new ApiError (404, "User does not exist")
+          return res.status(500).json(new ApiError (500, "User does not exist"))
         }
         const user = userQuery.rows[0]
 
         if(!bcrypt.compareSync(password, user.password)){
-            throw new ApiError(401, "Invalid user credentials")
+          return res.status(500).json(new ApiError(401, "Invalid user credentials"))
         }
 
         const {accessToken, refreshToken} = await generateAccessAndRefreshTokens(user.id)
@@ -90,6 +87,7 @@ export const login = asyncHandler( async (req, res) => {
                 expiresIn: 200000
             };
 
+            console.log(accessToken)
                 
             return res
             .status(200)
@@ -101,10 +99,10 @@ export const login = asyncHandler( async (req, res) => {
                     { user: loggedInUser, accessToken, refreshToken},
                     "User logged in successfully"));
         }catch(err){
-            console.log(err)
+          return res.status(500).json(new ApiError(500, "Something went wrong while registering the user"));
         }
     }catch(err){
-        console.log(err)
+      return res.status(500).json(new ApiError(500, "Something went wrong while registering the user"));
     }
 })
 
@@ -122,7 +120,7 @@ export const logout = asyncHandler(async (req, res) => {
         .clearCookie("refreshToken", options)
         .json(new ApiResponse(200, {}, "User logged out"));  
     }catch(err){
-        console.log(err)
+      return res.status(500).json(new ApiError(500, "Something went wrong while registering the user"));
     }
 });
 
@@ -132,7 +130,7 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
       req.cookies.refreshToken || req.body.refreshToken;
   
     if (!incomingRefreshToken) {
-      throw new ApiError(401, "Unauthorized request");
+      return res.status(401).json(new ApiError(401, "Unauthorized request"));
     }
   
     try {
@@ -143,13 +141,13 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
       const userQuery = await db.query("select * from profile where id=$1", [decodedToken?.id]);
 
       if (user.rows.length === 0) {
-        throw new ApiError(401, "Invalid refresh token");
+        return res.status(401).json(ApiError(401, "Invalid refresh token"));
       }
 
       const user = userQuery.rows[0];
 
       if (incomingRefreshToken !== user?.refreshToken) {
-        throw new ApiError(401, "Refresh token is expired or used");
+        return res.status(401).json(new ApiError(401, "Refresh token is expired or used"));
       }
       const options = {
         httpOnly: true,
@@ -172,7 +170,7 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
       )
     );
 } catch (error) {
-  throw new ApiError(401, error?.message || "Invalid refresh token");
+  return res.status(401).json(new ApiError(401, error?.message || "Invalid refresh token"));
 }
 });
 

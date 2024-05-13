@@ -8,7 +8,7 @@ import moment from "moment";
 import { useState } from "react";
 import { classNames } from "../../utils";
 
-const MessageItem= ({ message, isOwnMessage, isGroupChatMessage }) => {
+const MessageItem= ({ message, isOwnMessage }) => {
   const [resizedImage, setResizedImage] = useState(null);
   return (
     <>
@@ -32,7 +32,7 @@ const MessageItem= ({ message, isOwnMessage, isGroupChatMessage }) => {
         )}
       >
         <img
-          src={message.sender?.avatar?.url}
+          src="#"
           className={classNames(
             "h-8 w-8 object-cover rounded-full flex flex-shrink-0",
             isOwnMessage ? "order-2" : "order-1"
@@ -46,18 +46,6 @@ const MessageItem= ({ message, isOwnMessage, isGroupChatMessage }) => {
               : "order-2 rounded-bl-none bg-secondary"
           )}
         >
-          {isGroupChatMessage && !isOwnMessage ? (
-            <p
-              className={classNames(
-                "text-xs font-semibold mb-2",
-                ["text-success", "text-danger"][
-                  message.sender.username.length % 2
-                ]
-              )}
-            >
-              {message.sender?.username}
-            </p>
-          ) : null}
 
           {message?.attachments?.length > 0 ? (
             <div
@@ -114,7 +102,7 @@ const MessageItem= ({ message, isOwnMessage, isGroupChatMessage }) => {
             {message.attachments?.length > 0 ? (
               <PaperClipIcon className="h-4 w-4 mr-2 " />
             ) : null}
-            {moment(message.updatedAt).add("TIME_ZONE", "hours").fromNow(true)}{" "}
+            {moment(message.updated_at).add("TIME_ZONE", "hours").fromNow(true)}{" "}
             ago
           </p>
         </div>

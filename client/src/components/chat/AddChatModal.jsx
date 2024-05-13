@@ -5,20 +5,22 @@ import {
   XMarkIcon,
 } from "@heroicons/react/20/solid";
 import { Fragment, useEffect, useState } from "react";
-import {createUserChat, getUserChats} from "../../api";
+import { getAllFriends, getChat } from "../../api";
 import { classNames, requestHandler } from "../../utils";
 import Button from "../Button";
 import Input from "../Input";
 import Select from "../Select";
+import { useAuth } from "../../context/AuthContext";
 
 const AddChatModal = ({ open, onClose, onSuccess }) => {
+  const {user} = useAuth();
   const [users, setUsers] = useState([]);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [creatingChat, setCreatingChat] = useState(false);
 
   const getUsers = async () => {
     requestHandler(
-      async () => await getUserChats(users),
+      async () => await getAllFriends(user.id),
       null, 
       (res) => {
         const { data } = res; 
@@ -28,24 +30,24 @@ const AddChatModal = ({ open, onClose, onSuccess }) => {
     );
   };
 
-  const createNewChat = async () => {
-    if (!selectedUserId) return alert("Please select a user");
+  // const createNewChat = async () => {
+  //   if (!selectedUserId) return alert("Please select a user");
 
-    await requestHandler(
-      async () => await createUserChat(selectedUserId),
-      setCreatingChat, 
-      (res) => {
-        const { data } = res;
-        if (res.statusCode === 200) {
-          alert("Chat with selected user already exists");
-          return;
-        }
-        onSuccess(data); 
-        handleClose(); 
-      },
-      alert 
-    );
-  };
+  //   await requestHandler(
+  //     async () => await createUserChat(selectedUserId),
+  //     setCreatingChat, 
+  //     (res) => {
+  //       const { data } = res;
+  //       if (res.statusCode === 200) {
+  //         alert("Chat with selected user already exists");
+  //         return;
+  //       }
+  //       onSuccess(data); 
+  //       handleClose(); 
+  //     },
+  //     alert 
+  //   );
+  // };
 
 
   const handleClose = () => {
@@ -54,13 +56,9 @@ const AddChatModal = ({ open, onClose, onSuccess }) => {
     onClose();
   };
 
-  // useEffect hook to perform side effects based on changes in the component lifecycle or state/props
   useEffect(() => {
-    // Check if the modal/dialog is not open
     if (!open) return;
-    // Fetch users if the modal/dialog is open
     getUsers();
-    // The effect depends on the 'open' value. Whenever 'open' changes, the effect will re-run.
   }, [open]);
 
   return (
@@ -113,20 +111,19 @@ const AddChatModal = ({ open, onClose, onSuccess }) => {
                     </button>
                   </div>
                 </div>
-                {/* <div>
+                <div>
                   <Switch.Group as="div" className="flex items-center my-5">
                     <Switch
-                      checked={isGroupChat}
-                      onChange={setIsGroupChat}
+                      checked={false}
                       className={classNames(
-                        isGroupChat ? "bg-secondary" : "bg-zinc-200",
+                        false ? "bg-secondary" : "bg-zinc-200",
                         "relative outline outline-[1px] outline-white inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:ring-0"
                       )}
                     >
                       <span
                         aria-hidden="true"
                         className={classNames(
-                          isGroupChat
+                          false
                             ? "translate-x-5 bg-success"
                             : "translate-x-0 bg-white",
                           "pointer-events-none inline-block h-5 w-5 transform rounded-full shadow ring-0 transition duration-200 ease-in-out"
@@ -137,50 +134,44 @@ const AddChatModal = ({ open, onClose, onSuccess }) => {
                       <span
                         className={classNames(
                           "font-medium text-white",
-                          isGroupChat ? "" : "opacity-40"
+                          false ? "" : "opacity-40"
                         )}
                       >
                         Is it a group chat?
                       </span>{" "}
                     </Switch.Label>
                   </Switch.Group>
-                  {isGroupChat ? (
+                  {false ? (
                     <div className="my-5">
                       <Input
                         placeholder={"Enter a group name..."}
-                        value={groupName}
-                        onChange={(e) => {
-                          setGroupName(e.target.value);
-                        }}
+                        value={"group name"}
+                        // onChange={(e) => {
+                        //   setGroupName(e.target.value);
+                        // }}
                       />
                     </div>
                   ) : null}
                   <div className="my-5">
                     <Select
                       placeholder={
-                        isGroupChat
+                        false
                           ? "Select group participants..."
                           : "Select a user to chat..."
                       }
-                      value={isGroupChat ? "" : selectedUserId || ""}
+                      value={false ? "" : selectedUserId || ""}
                       options={users.map((user) => {
                         return {
                           label: user.username,
-                          value: user._id,
+                          value: user.id,
                         };
                       })}
                       onChange={({ value }) => {
-                        if (isGroupChat && !groupParticipants.includes(value)) {
-                          // if user is creating a group chat track the participants in an array
-                          setGroupParticipants([...groupParticipants, value]);
-                        } else {
                           setSelectedUserId(value);
-                          // if user is creating normal chat just get a single user
-                        }
                       }}
                     />
                   </div>
-                  {isGroupChat ? (
+                  {false ? (
                     <div className="my-5">
                       <span
                         className={classNames(
@@ -237,12 +228,12 @@ const AddChatModal = ({ open, onClose, onSuccess }) => {
                   </Button>
                   <Button
                     disabled={creatingChat}
-                    onClick={isGroupChat ? createNewGroupChat : createNewChat}
+                    onClick={() => console.log('successfully created')}
                     className="w-1/2"
                   >
                     Create
                   </Button>
-                </div> */}
+                </div>
               </Dialog.Panel>
             </Transition.Child>
           </div>

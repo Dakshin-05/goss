@@ -1,0 +1,250 @@
+import React, { useCallback, useEffect, useState } from 'react'
+import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
+import { LocalStorage, requestHandler } from '../utils';
+import { io } from 'socket.io-client';
+import { getChat, getChatMessages, sendMessage } from '../api';
+import { useLocation, useParams } from 'react-router-dom';
+import TextChatBubble from '../components/tmpchat/TextChatBubble';
+
+
+// export const socket = io("http://localhost:5000", {withCredentials: true});
+
+
+const CONNECTED_EVENT = "connected";
+const DISCONNECT_EVENT = "disconnect";
+const JOIN_CHAT_EVENT = "joinChat";
+const NEW_CHAT_EVENT = "newChat";
+const TYPING_EVENT = "typing";
+const STOP_TYPING_EVENT = "stopTyping";
+const MESSAGE_RECEIVED_EVENT = "messageReceived";
+const LEAVE_CHAT_EVENT = "leaveChat";
+const UPDATE_GROUP_NAME_EVENT = "updateGroupName";
+let state;
+let set = false;
+
+// const topLabel = document.getElementById('date-label')
+// const messageBox = document.getElementById('messages')
+// messageBox.addEventListener('scroll', () => {
+//   const dateLabels = document.querySelectorAll('.divider')
+//   let currentLabel = null
+//   dateLabels.forEach((dateLabel) => {
+//     if(messageBox.scrollTop >= dateLabel.offsetTop)
+//     {
+//       currentLabel = dateLabel
+//     }
+//   })
+//   if(currentLabel) {
+//     topLabel.style.opacity = '1'
+//     topLabel.innerText = currentLabel.innerText
+//   } else {
+//     topLabel.style.opacity = '0'
+//   }
+// })
+
+const TmpChat = ()  => {
+
+  const {user} = useAuth();
+  const {friendId} = useParams()
+  const {socket} = useSocket();
+
+  const {state} = useLocation()
+  console.log(state)
+  //states
+  const [currChat, setCurrChat] = useState(null);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [messages, setMessages] = useState([])
+  const [unReadMessages, setUnReadMessages] = useState([])
+  const [isConnected, setIsConnected] = useState(false)
+  const [currMessage, setCurrMessage] = useState("")
+  let timeSetForDay = false;
+
+  const handleMessageOnChange = (e) => {
+    setCurrMessage(e.target.value)
+    if (!socket || !isConnected) return;
+     
+    //yet to be completed
+  }
+
+ 
+
+  const onMessageReceived = (message) => {
+    console.log(message)
+    setMessages((prev) => [...prev, message])
+  }
+  
+  useEffect(()=>{
+    window.scrollTo(0, document.body.scrollHeight);
+
+  },[messages])
+ 
+  const getCurrChat = async () => {
+    requestHandler(
+      async () => await getChat(user.id, friendId),
+      null,
+      (res) => {
+        const { data } = res;
+        setCurrChat(data.chat || []);
+      },
+      alert
+    )
+  }
+
+  const getMessages = async () => {
+    if (!currChat.id) return alert("No chat is selected");
+
+    if (!socket) return alert("Socket not available");
+
+
+    requestHandler(
+      async () => await getChatMessages(user.id, currChat.id || ""),
+      setLoadingMessages,
+      (res) => {
+        const { data } = res;
+        setMessages(data.messages || []);
+      },
+      alert
+    );
+  };
+
+  
+  const handleSendMessage = async () => {
+    console.log("sending message!!")
+    if (!currChat.id || !socket) return;
+
+    await requestHandler(
+      async () =>
+        await sendMessage(
+          user.id,
+          currChat.id || "",
+          currMessage
+        ),
+      null,
+      (res) => {
+        setCurrMessage("");
+        getMessages()
+  
+      },
+      alert
+    );
+  };
+
+
+  useEffect(()=>{
+    getCurrChat();
+    window.scrollTo(0, document.body.scrollHeight);
+  },[]);
+
+  useEffect(()=>{
+    if(currChat){
+      socket?.emit(JOIN_CHAT_EVENT, currChat.id);
+      setIsConnected(true);
+      getMessages();
+    }
+  },[currChat]);
+
+  const onConnect = () => {
+    console.log("connecting")
+  }
+
+
+  useEffect(()=>{
+
+    socket.on(CONNECTED_EVENT,onConnect);
+    
+    socket.on(DISCONNECT_EVENT, ()=>{
+      console.log("disconnected event")
+    });
+
+    socket.on(MESSAGE_RECEIVED_EVENT, onMessageReceived);
+    
+    return () => {
+      socket.off(CONNECTED_EVENT, () => {
+        console.log("connected event")
+      });
+
+      socket.off(DISCONNECT_EVENT, ()=>{
+        console.log("disconnected event")
+      });
+
+      socket.off(MESSAGE_RECEIVED_EVENT, onMessageReceived);
+    };
+  },[socket]);
+
+  return (
+    
+    <div className='w-full h-42 select-none overflow-y-scroll no-scrollbar'>
+      Socked Id: {socket.id}
+
+
+      <nav class="flex fixed inset-x-0 top-5 items-center justify-center" aria-label="Breadcrumb">
+  
+      <div class="flex items-center">
+        
+        <a href="#" class="ms-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ms-2 dark:text-gray-400 dark:hover:text-white"></a>
+      </div>
+   
+</nav>
+
+
+
+      <h2 class=''>Messages: </h2>
+      <div class='mb-20 mx-6 select-none overflow-y-scroll no-scrollbar'
+      >
+      <div className='flex flex-col '>
+        {messages && messages.map((m) => {
+          timeSetForDay=false
+           if(new Date(m.created_at).toLocaleDateString().slice(2,4) != set){
+            set = Number(new Date(m.created_at).toLocaleDateString().slice(2,4))
+            timeSetForDay=true
+                   }
+          
+          const isCurrentUser = m.sender_id === user.id;
+          return (
+            <>{
+                timeSetForDay && 
+                <div class="flex justify-center max-xl sticky">
+                  {Number(new Date(m.created_at)) > new Date().setHours(0,0,0,0) ? "Today" : (
+                  Number(new Date(m.created_at)) > new Date().setDate(new Date().getDate() - 1) ? "Yesterday" : new Date(m.created_at).toDateString().slice(3))
+                  }
+                </div>
+            }
+           
+            <div key={m.id} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} my-3`}>
+              <TextChatBubble mId={m.id}
+                username={isCurrentUser ? "You" : state?.friendName }
+                timestamp={m.created_at}
+                message={m.content}
+                deliveredStatus= {m.seen ? "read" : "sent"}
+                className="inline-block "
+              />
+            </div>
+            </>
+          );
+        })}
+      </div>
+
+      </div>
+
+<div class="fixed  mt-5 bottom-2 w-full px-2 ">   
+    <label for="search" class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>
+    <div class="relative">
+        <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+        <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 16">
+        <path d="m10.036 8.278 9.258-7.79A1.979 1.979 0 0 0 18 0H2A1.987 1.987 0 0 0 .641.541l9.395 7.737Z"/>
+        <path d="M11.241 9.817c-.36.275-.801.425-1.255.427-.428 0-.845-.138-1.187-.395L0 2.6V14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2.5l-8.759 7.317Z"/>
+    </svg>
+        </div>
+        <input type="search" id="search" class="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 " placeholder="Your Message" required value={currMessage}  onChange={handleMessageOnChange} autoComplete='off'/>
+        <button type="submit" class="text-white absolute end-2.5 placeholder: bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800" onClick={handleSendMessage}>Send</button>
+    </div>
+</div>
+
+
+
+
+    </div>
+  )
+}
+
+export default TmpChat;

@@ -1,4 +1,4 @@
-import socketIo, { Socket } from "socket.io-client";
+import socketio from "socket.io-client";
 import { LocalStorage } from "../utils"
 import { createContext, useContext, useEffect, useState } from "react";
 
@@ -6,7 +6,8 @@ import { createContext, useContext, useEffect, useState } from "react";
 const getSocket = () => {
     const token = LocalStorage.get("token");
 
-    return socketIo(import.meta.env.VITE_SOCKET_URI, {
+    const URI = "http://localhost:5000"
+    return socketio(URI, {
         withCredentials: true,
         auth: {token},
     });

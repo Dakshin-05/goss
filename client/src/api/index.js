@@ -30,8 +30,8 @@ const logoutUser = () => {
     return apiClient.post('/logout');
 };
 
-const getUserChats = (userId) => {
-    return apiClient.get(`/user/${userId}/getAllChats`);
+const getUserChat = (userId) => {
+    return apiClient.get(`/user/${userId}/getChat`);
 };
 
 const makeFriendRequest = (userId, data) => {
@@ -42,45 +42,67 @@ const getAllFriends = (userId) => {
     return apiClient.get(`/user/${userId}/getAllFriends`)
 }
 
+const deleteFriend = (userId, data) => {
+    console.log(data)
+    return apiClient.patch(`/user/${userId}/removeFriend`, data)
+}
+
 const getBlockedUsers = (userId) => {
     return apiClient.get(`/user/${userId}/getBlockedUsers`)
+}
+
+const removeBlockedUser = (userId, data) => {
+    return apiClient.patch(`/user/${userId}/removeBlockedUser`, data)
 }
 
 const getPendingRequests = (userId) => {
     return apiClient.get(`/user/${userId}/getPendingRequests`)
 }
-  
-const createUserChat = (userId, receiverId) => {
-    return apiClient.post(`/user/${userId}/${receiverId}`);
-};
 
-const getChatMessages = (userId, conversationId) => {
-    return apiClient.get(`/user/${userId}/${conversationId}/messages`)
+const acceptOrIgnorePendingRequest = (userId, data) => {
+    return apiClient.patch(`/user/${userId}/handleFriendRequest`, data)
 }
 
-const deleteOneOnOneChat = (chatId) => {
-    return apiClient.delete(`/chat-app/chats/remove/${chatId}`);
-};
+const removePendingRequest = (userId, data) => {
+    return apiClient.patch(`/user/${userId}/removePendingRequest`, data)
+}
 
-const sendMessage = (chatId, content) => {
-    const formData = new FormData();
-    if (content) {
-      formData.append("content", content);
-    }
-    return apiClient.post(`/chat-app/messages/${chatId}`, formData);
+const getChatMessages = (userId, chatId) => {
+    return apiClient.get(`/user/${userId}/${chatId}/getMessages`)
+}
+
+
+const getChat = (userId, friendId) => {
+    return apiClient.get(`/user/${userId}/${friendId}/getChat`)
+}
+
+const getAllChats = (userId) => {
+    return apiClient.get(`/user/${userId}/getAllChats`)
+}
+
+const sendMessage = (userId, chatId, content) => {
+    // const formData = new FormData();
+    // if (content) {
+    //   formData.append("content", content);
+    // }
+    return apiClient.post(`/user/${userId}/${chatId}/`, {content: content});
   };
 
 export {
-    createUserChat,
     getChatMessages,
-    getUserChats,
+    getUserChat,
     makeFriendRequest,
+    deleteFriend,
     getBlockedUsers,
+    removeBlockedUser,
     getAllFriends,
     getPendingRequests,
+    acceptOrIgnorePendingRequest,
+    removePendingRequest,
     loginUser,
     logoutUser,
     registerUser,
-    deleteOneOnOneChat,
-    sendMessage
+    sendMessage,
+    getChat,
+    getAllChats
 };

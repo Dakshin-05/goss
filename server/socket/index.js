@@ -1,10 +1,14 @@
 import {Server, Socket} from "socket.io";
 import { ChatEventEnum } from "../constants.js";
 import { db } from "../db/index.js";
+import jwt from "jsonwebtoken";
+import { ApiError } from "../utils/apiError.js";
+import cookie from "cookie"
+import { getVisitors } from "../index.js";
 
 const mountJoinChatEvent = (socket) => {
     socket.on(ChatEventEnum.JOIN_CHAT_EVENT, (chatId)=>{
-        console.log(`User joined the chat. chatId: `, chatId);
+        console.log(`User joined the chat 🤝. chatId:`, chatId);
         socket.join(chatId)
     })
 }
@@ -21,28 +25,34 @@ const mountParticipantStoppedTypingEvent = (socket) => {
     })
 }
 
-export const initializeSocketIO = (io) => {
+
+
+
+const initializeSocketIO = (io) => {
     return io.on("connection", async(socket)=> {
         try{
-            const cookie = cookie.parse(socket.handshake.headers?.cookie || "");
-            const token = cookie.split(';').filter((item) => {
-                const data = item.trim().split('=');
-                console.log(data)
-                if(data[0] !== "connect.sid") 
-                return data[1];
-            })[0].split('=')[1];
+            const cookies = cookie.parse(socket.handshake.headers?.cookie || "");
+            let token = cookies?.accessToken;
 
             if(!token){
-                throw new Error("un-authorized handshake - token invalid")
+                token = socket.handshake.auth?.token;
+            }
+                    
+            if (!token) {
+                throw new ApiError(401, "Un-authorized handshake. Token is missing");
             }
 
             const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
-            const user = await db.query("select * from profile where id=$1", [decodedToken.id])
+            const userQuery = await db.query("select id, name, username, email from profile where id=$1", [decodedToken.id])
 
-            if(!user){
-                throw new Error("un-authorized handshake - user invalid")
+
+            if(userQuery.rowCount === 0){
+                throw new ApiError(401, "un-authorized handshake - user invalid")
             }
+
+            const user = userQuery.rows[0];
+            console.log(user)
 
             socket.user = user;
 
@@ -54,9 +64,27 @@ export const initializeSocketIO = (io) => {
             mountJoinChatEvent(socket);
             mountParticipantTypingEvent(socket);
             mountParticipantStoppedTypingEvent(socket);
+            socket.on("ok", async user =>{
+                console.log("new user")
+                socket.user = user;
+                io.emit("visitors", await getVisitors())
+            });
+
+            socket.on("markMessagesAsSeen", async ({ mId, userId }) => {
+                try {
+                    await db.query("update message set seen=true where id=$1 and seen=false", [mId])
+                    // await Message.updateMany({ conversationId: conversationId, seen: false }, { $set: { seen: true } });
+                    // await Conversation.updateOne({ _id: conversationId }, { $set: { "lastMessage.seen": true } });
+                    io.to(userId).emit("messagesSeen", { mId });
+                } catch (error) {
+                    console.log(error);
+                }
+            });
             
-            socket.on(ChatEventEnum.DISCONNECT_EVENT, () => {
+
+            socket.on(ChatEventEnum.DISCONNECT_EVENT, async () => {
                 console.log("user has disconnected 🚫. userId: " + socket.user?.id);
+                io.emit("visitors", await getVisitors());
                 if(socket.user?.id){
                     socket.leave(socket.user.id);
                 }
@@ -68,7 +96,8 @@ export const initializeSocketIO = (io) => {
     })
 }
 
-export const emitSocketEvent = (req, roomId, event, payload) => {
+const emitSocketEvent = (req, roomId, event, payload) => {
     req.app.get("io").in(roomId).emit(event, payload);
 }
 
+export { initializeSocketIO, emitSocketEvent };

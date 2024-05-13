@@ -4,7 +4,7 @@ import {
   XCircleIcon,
 } from "@heroicons/react/20/solid";
 import { useEffect, useRef, useState } from "react";
-import { getChatMessages, getUserChats, sendMessage } from "../api";
+import { getAllChats, getAllFriends, getChatMessages, getUserChat, sendMessage } from "../api";
 import AddChatModal from "../components/chat/AddChatModal";
 import ChatItem from "../components/chat/ChatItem";
 import MessageItem from "../components/chat/MessageItem";
@@ -19,6 +19,7 @@ import {
   requestHandler,
 } from "../utils";
 
+
 const CONNECTED_EVENT = "connected";
 const DISCONNECT_EVENT = "disconnect";
 const JOIN_CHAT_EVENT = "joinChat";
@@ -28,7 +29,7 @@ const STOP_TYPING_EVENT = "stopTyping";
 const MESSAGE_RECEIVED_EVENT = "messageReceived";
 const LEAVE_CHAT_EVENT = "leaveChat";
 
-const ChatPage = () => {
+const ChatPage = ({friend}) => {
   const { user } = useAuth();
   const { socket } = useSocket();
   const currentChat = useRef(null);
@@ -39,14 +40,14 @@ const ChatPage = () => {
   const [loadingMessages, setLoadingMessages] = useState(false); 
   const [chats, setChats] = useState([]); 
   const [messages, setMessages] = useState([]); 
-  const [unreadMessages, setUnreadMessages] = useState(
-    []
-  ); 
+  const [unreadMessages, setUnreadMessages] = useState([]); 
   const [isTyping, setIsTyping] = useState(false);
   const [selfTyping, setSelfTyping] = useState(false); 
 
   const [message, setMessage] = useState(""); 
   const [localSearchQuery, setLocalSearchQuery] = useState("")
+
+  
 
 //   const updateChatLastMessage = (
 //     chatToUpdateId,
@@ -67,13 +68,14 @@ const ChatPage = () => {
 //     ]);
 //   };
 
-  const getChats = async () => {
+  const getChat = async () => {
     requestHandler(
-      async () => await getUserChats(user.id),
+      async () => await getAllChats(user.id),
       setLoadingChats,
       (res) => {
         const { data } = res;
-        setChats(data || []);
+        setChats(data.chats || []);
+        console.log(data)
       },
       alert
     );
@@ -91,12 +93,12 @@ const ChatPage = () => {
     );
 
     requestHandler(
-      async () => await getChatMessages(currentChat.current?.id || ""),
+      async () => await getChatMessages(user.id, currentChat.current?.id || ""),
       setLoadingMessages,
 
       (res) => {
         const { data } = res;
-        setMessages(data || []);
+        setMessages(data.messages || []);
       },
       alert
     );
@@ -111,6 +113,7 @@ const ChatPage = () => {
     await requestHandler(
       async () =>
         await sendMessage(
+          user.id,
           currentChat.current?.id || "",
           message
         ),
@@ -118,7 +121,6 @@ const ChatPage = () => {
       (res) => {
         setMessage("");
         setMessages((prev) => [res.data, ...prev]); 
-        updateChatLastMessage(currentChat.current?.id || "", res.data); 
       },
       alert
     );
@@ -147,6 +149,7 @@ const ChatPage = () => {
   };
 
   const onConnect = () => {
+    console.log("connecting")
     setIsConnected(true);
   };
 
@@ -166,16 +169,16 @@ const ChatPage = () => {
 
   const onMessageReceived = (message) => {
     
-    if (message?.chat !== currentChat.current?.id) {
+    if (message?.chat_id !== currentChat.current?.id) { // changed
       setUnreadMessages((prev) => [message, ...prev]);
     } else {
       setMessages((prev) => [message, ...prev]);
     }
 
-    updateChatLastMessage(message.chat || "", message);
+    updateChatLastMessage(message.chat_id || "", message); // changed
   };
 
-  const onNewChat = (chat) => {
+  const onNewChat = (chat) => { // want to remove 
     setChats((prev) => [chat, ...prev]);
   };
 
@@ -189,12 +192,12 @@ const ChatPage = () => {
   };
 
   useEffect(() => {
-    getChats();
+    getChat();
 
-    const currentChat = LocalStorage.get("currentChat");
+    const _currentChat = LocalStorage.get("currentChat");
 
-    if (currentChat) {
-      currentChat.current = currentChat;
+    if (_currentChat) {
+      currentChat.current = _currentChat;
      
       socket?.emit(JOIN_CHAT_EVENT, _currentChat.current?._id);
       getMessages();
@@ -205,7 +208,7 @@ const ChatPage = () => {
 
   useEffect(() => {
     if (!socket) return;
-
+   
     socket.on(CONNECTED_EVENT, onConnect);
     
     socket.on(DISCONNECT_EVENT, onDisconnect);
@@ -236,15 +239,15 @@ const ChatPage = () => {
 
   return (
     <>
-      <AddChatModal
+      {/* <AddChatModal
         open={openAddChat}
         onClose={() => {
           setOpenAddChat(false);
         }}
         onSuccess={() => {
-          getChats();
+          getChat();
         }}
-      />
+      /> */}
 
       <div className="w-full justify-between items-stretch h-screen flex flex-shrink-0">
         <div className="w-1/3 relative ring-white overflow-y-auto px-4">
@@ -270,28 +273,18 @@ const ChatPage = () => {
           ) : (
             // Iterating over the chats array
             [...chats]
-              // Filtering chats based on a local search query
-              .filter((chat) =>
-                // If there's a localSearchQuery, filter chats that contain the query in their metadata title
-                localSearchQuery
-                  ? getChatObjectMetadata(chat, user)
-                      .title?.toLocaleLowerCase()
-                      ?.includes(localSearchQuery)
-                  : // If there's no localSearchQuery, include all chats
-                    true
-              )
               .map((chat) => {
                 return (
                   <ChatItem
                     chat={chat}
-                    isActive={chat._id === currentChat.current?._id}
+                    isActive={chat.id === currentChat.current?.id}
                     unreadCount={
-                      unreadMessages.filter((n) => n.chat === chat._id).length
+                      unreadMessages.filter((n) => n.chat === chat.id).length
                     }
                     onClick={(chat) => {
                       if (
-                        currentChat.current?._id &&
-                        currentChat.current?._id === chat._id
+                        currentChat.current?.id &&
+                        currentChat.current?.id === chat.id
                       )
                         return;
                       LocalStorage.set("currentChat", chat);
@@ -299,12 +292,12 @@ const ChatPage = () => {
                       setMessage("");
                       getMessages();
                     }}
-                    key={chat._id}
+                    key={chat.id}
                     onChatDelete={(chatId) => {
                       setChats((prev) =>
-                        prev.filter((chat) => chat._id !== chatId)
+                        prev.filter((chat) => chat.id !== chatId)
                       );
-                      if (currentChat.current?._id === chatId) {
+                      if (currentChat.current?.id === chatId) {
                         currentChat.current = null;
                         LocalStorage.remove("currentChat");
                       }
@@ -315,13 +308,13 @@ const ChatPage = () => {
           )}
         </div>
         <div className="w-2/3 border-l-[0.1px] border-secondary">
-          {currentChat.current && currentChat.current?._id ? (
+          {currentChat.current && currentChat.current?.id ? (
             <>
               <div className="p-4 sticky top-0 bg-dark z-20 flex justify-between items-center w-full border-b-[0.1px] border-secondary">
                 <div className="flex justify-start items-center w-max gap-3">
-                  {currentChat.current.isGroupChat ? (
+                  {false? (
                     <div className="w-12 relative h-12 flex-shrink-0 flex justify-start items-center flex-nowrap">
-                      {currentChat.current.participants
+                      {currentChat.current?.participants
                         .slice(0, 3)
                         .map((participant, i) => {
                           return (
@@ -345,19 +338,17 @@ const ChatPage = () => {
                   ) : (
                     <img
                       className="h-14 w-14 rounded-full flex flex-shrink-0 object-cover"
-                      src={
-                        getChatObjectMetadata(currentChat.current, user).avatar
-                      }
+                      src="#"
+                      
                     />
                   )}
                   <div>
                     <p className="font-bold">
-                      {getChatObjectMetadata(currentChat.current, user).title}
+                      {"title"}
                     </p>
                     <small className="text-zinc-400">
                       {
-                        getChatObjectMetadata(currentChat.current, user)
-                          .description
+                        "description"
                       }
                     </small>
                   </div>
@@ -366,9 +357,7 @@ const ChatPage = () => {
               <div
                 className={classNames(
                   "p-8 overflow-y-auto flex flex-col-reverse gap-6 w-full",
-                  attachedFiles.length > 0
-                    ? "h-[calc(100vh-336px)]"
-                    : "h-[calc(100vh-176px)]"
+                    "h-[calc(100vh-176px)]"
                 )}
                 id="message-window"
               >
@@ -383,8 +372,8 @@ const ChatPage = () => {
                       return (
                         <MessageItem
                           key={msg._id}
-                          isOwnMessage={msg.sender?._id === user?._id}
-                          isGroupChatMessage={currentChat.current?.isGroupChat}
+                          isOwnMessage={msg.sender_id === user?.id}
+                          isGroupChatMessage={false}
                           message={msg}
                         />
                       );
@@ -392,7 +381,7 @@ const ChatPage = () => {
                   </>
                 )}
               </div>
-              {attachedFiles.length > 0 ? (
+              {false ? (
                 <div className="grid gap-4 grid-cols-5 p-4 justify-start max-w-fit">
                   {attachedFiles.map((file, i) => {
                     return (
@@ -432,7 +421,8 @@ const ChatPage = () => {
                   max={5}
                   onChange={(e) => {
                     if (e.target.files) {
-                      setAttachedFiles([...e.target.files]);
+                      // setAttachedFiles([...e.target.files]);
+                      console.log("files part")
                     }
                   }}
                 />
@@ -455,7 +445,7 @@ const ChatPage = () => {
                 />
                 <button
                   onClick={sendChatMessage}
-                  disabled={!message && attachedFiles.length <= 0}
+                  disabled={!message }
                   className="p-4 rounded-full bg-dark hover:bg-secondary disabled:opacity-50"
                 >
                   <PaperAirplaneIcon className="w-6 h-6" />

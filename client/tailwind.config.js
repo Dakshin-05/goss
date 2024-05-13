@@ -1,5 +1,8 @@
+import plugin from "tailwindcss";
+
 export default {
-  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}", 
+  "./node_modules/flowbite/**/*.js"],
   theme: {
     extend: {
       colors: {
@@ -11,5 +14,21 @@ export default {
       },
     },
   },
-  plugins: [],
+
+  plugins : [
+    function({addUtilities}){
+      const newUtilities = {
+        ".no-scrollbar::-webkit-scrollbar": {
+          display:"none"
+        },
+        ".no-scrollbar": {
+          "-ms-overflow-style": "none",
+          "scrollbar-width":"none"
+        }
+      }
+      addUtilities(newUtilities)
+    }, 
+    require('flowbite/plugin')
+  ]
+
 };

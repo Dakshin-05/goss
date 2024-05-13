@@ -12,6 +12,7 @@ const Login = () => {
     password: "",
   });
 
+ 
   const { login } = useAuth();
 
   const handleDataChange =
@@ -53,9 +54,10 @@ const Login = () => {
         </Button>
         <small className="text-zinc-300">
           Don&apos;t have an account?{" "}
-          <a className="text-primary hover:underline" href="/register">
+          <a className="text-primary hover:underline" href="/signup">
             Register
           </a>
+          
         </small>
       </div>
     </div>

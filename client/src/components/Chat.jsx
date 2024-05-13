@@ -6,6 +6,7 @@ import { ChatEventEnum } from "../constants";
 function Chat() {
   const socket = useMemo(() => io("http://localhost:5000"), []);
 
+  
   const [message, setMessage] = useState("");
   const [room, setRoom] = useState("");
   const [socketId, setSocketId] = useState("");

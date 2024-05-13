@@ -9,6 +9,7 @@ export const ChatEventEnum = Object.freeze({
     SOCKET_ERROR_EVENT: "socketError",
     STOP_TYPING_EVENT: "stopTyping",
     TYPING_EVENT: "typing",
+    ONLINE_EVENT: "online"
   });
   
   export const AvailableChatEvents = Object.values(ChatEventEnum);

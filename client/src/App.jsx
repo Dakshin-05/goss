@@ -1,15 +1,17 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/login";
 import SignUp from "./pages/signUp";
-import ChatPage from "./pages/chat";
+// import ChatPage from "./pages/chat";
+import ChatPage from "./pages/tmpchat";
 import HomePage from "./pages/home";
 import { useAuth } from "./context/AuthContext";
 import PrivateRoute from "./components/PrivateRoute";
 import PublicRoute from "./components/PublicRoute";
+import Error from "./components/Error";
 
 const App = () => {
   const {token, user} = useAuth();
-console.log(token, user)
+
   return (
     <Routes>
       <Route 
@@ -23,10 +25,11 @@ console.log(token, user)
         }
       />
       <Route
-        path='/chat'
+        path='/chat/:friendId'
         element={
           <PrivateRoute>
             <ChatPage />
+            {/* <Error/> */}
           </PrivateRoute>
         }
       />

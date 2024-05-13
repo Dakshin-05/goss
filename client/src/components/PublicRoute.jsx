@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 const PublicRoute = ({ children }) => {
   const { token, user } = useAuth();
 
-  if (token && user?.id) return <Navigate to="/chat" replace />;
+  if (token && user?.id) return <Navigate to="/home" replace />;
 
   return children;
 };

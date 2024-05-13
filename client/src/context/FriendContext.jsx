@@ -6,7 +6,7 @@ import Loader from "../components/Loader.jsx";
 
 
 
-const AuthContext = createContext({
+const FriendContext = createContext({
     user: null,
     token: null,
     login: async () => {},
@@ -14,15 +14,13 @@ const AuthContext = createContext({
     logout: async () => {},
 });
 
-const useAuth = () => useContext(AuthContext);
+const useFriend = () => useContext(FriendContext);
 
-const AuthProvider = ({
-    children,
+const FriendProvider = ({
+    children
 }) => {
-    const [isLoading, setIsLoading] = useState(false);
-    const [user, setUser] = useState(null)
-    const [token, setToken] = useState(null);
     const [isRequesting, setIsRequesting] = useState(false);
+   
 
     const navigate = useNavigate();
 
@@ -81,7 +79,7 @@ const AuthProvider = ({
     },[]);
 
     return (
-        <AuthContext.Provider value={{user, login, register, logout, token, setIsRequesting }}>
+        <AuthContext.Provider value={{user, login, register, logout, token, setIsRequesting}}>
             {isLoading ? <Loader /> : children}
         </AuthContext.Provider>
     );

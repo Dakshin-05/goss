@@ -5,12 +5,9 @@ export const requestHandler = async (
     onError
  ) => {
     setLoading && setLoading(true);
-    console.log("request handler")
     try {
         const response = await api();
-        console.log("response: ",response)
         const { data } = response;
-
         if(data?.success) {
             onSuccess(data);
         }
