@@ -12,6 +12,11 @@ export default {
         danger: "#eb3330",
         success: "#4aac68",
       },
+      width: { 
+        '350': '350px', 
+    }, height: { 
+      '500': '500px', 
+  }, 
     },
   },
 
@@ -28,7 +33,7 @@ export default {
       }
       addUtilities(newUtilities)
     }, 
-    require('flowbite/plugin')
+    // require('flowbite/plugin')
   ]
 
 };

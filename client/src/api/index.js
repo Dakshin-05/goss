@@ -85,8 +85,24 @@ const sendMessage = (userId, chatId, content) => {
     // if (content) {
     //   formData.append("content", content);
     // }
-    return apiClient.post(`/user/${userId}/${chatId}/`, {content: content});
-  };
+    return apiClient.post(`/user/${userId}/${chatId}/sendMessage`, {content: content});
+};
+
+const deleteMessage = (userId, chatId, messageId) => {
+    return apiClient.patch(`/user/${userId}/${chatId}/deleteMessage`, {messageId: messageId})
+}
+
+const editMessages = (userId, chatId, messageId, newContent) => {
+    return apiClient.patch(`/user/${userId}/${chatId}/editMessage`, {messageId: messageId, newContent: newContent})
+}
+
+const createServer = (userId, serverName) => {
+    return apiClient.post(`/user/${userId}/createServer`,  {serverName:serverName})
+}
+
+const getAllServers = (userId) => {
+    return apiClient.get(`/user/${userId}/getAllServers`)
+}
 
 export {
     getChatMessages,
@@ -101,8 +117,12 @@ export {
     removePendingRequest,
     loginUser,
     logoutUser,
+    editMessages,
     registerUser,
     sendMessage,
+    deleteMessage,
     getChat,
-    getAllChats
+    getAllChats,
+    createServer,
+    getAllServers
 };

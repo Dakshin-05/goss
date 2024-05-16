@@ -25,6 +25,18 @@ const mountParticipantStoppedTypingEvent = (socket) => {
     })
 }
 
+const mountMessageDeliveredEvent = (socket) => {
+    socket.on(ChatEventEnum.MESSAGE_DELIVERED_EVENT, ({chatId, messageId})=>{
+        console.log("from socket Backend: ", chatId, messageId);
+        try{
+            db.query("update message set read_at = current_timestamp where id = $1", [messageId])
+        } catch (err){
+            console.log(err)
+        }
+        socket.in(chatId).emit(ChatEventEnum.MESSAGE_DELIVERED_EVENT, messageId)
+    })
+}
+
 
 
 
@@ -64,6 +76,8 @@ const initializeSocketIO = (io) => {
             mountJoinChatEvent(socket);
             mountParticipantTypingEvent(socket);
             mountParticipantStoppedTypingEvent(socket);
+            mountMessageDeliveredEvent(socket);
+            
             socket.on("ok", async user =>{
                 console.log("new user")
                 socket.user = user;

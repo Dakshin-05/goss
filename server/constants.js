@@ -5,11 +5,14 @@ export const ChatEventEnum = Object.freeze({
     LEAVE_CHAT_EVENT: "leaveChat",
     UPDATE_GROUP_NAME_EVENT: "updateGroupName",
     MESSAGE_RECEIVED_EVENT: "messageReceived",
+    MESSAGE_DELETED_EVENT: "messageDeleted",
+    MESSAGE_EDITED_EVENT: "messageEdited",
     NEW_CHAT_EVENT: "newChat",
     SOCKET_ERROR_EVENT: "socketError",
     STOP_TYPING_EVENT: "stopTyping",
     TYPING_EVENT: "typing",
-    ONLINE_EVENT: "online"
+    ONLINE_EVENT: "online",
+    MESSAGE_DELIVERED_EVENT: "delivered"
   });
   
   export const AvailableChatEvents = Object.values(ChatEventEnum);

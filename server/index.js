@@ -70,12 +70,12 @@ app.use(passport.initialize())
 app.use(passport.session())
 
 app.use("/api",userRouter);
-app.use("/api/user/:userId",friendRequestRouter);
+app.use("/api/user/:userId/",friendRequestRouter);
 app.use("/api/user/:userId/", chatRouter)
 app.use("/api/user/:userId/:chatId", messageRouter);
 
-app.use("/api/user/:userId", serverRequestRouter)
-app.use("/api/user/:userId", serverOperationRouter)
+app.use("/api/user/:userId/", serverRequestRouter)
+app.use("/api/user/:userId/", serverOperationRouter)
 
 app.use(errorHandler)
 httpServer.listen(process.env.PORT, (req, res) => {

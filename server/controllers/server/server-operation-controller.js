@@ -6,12 +6,12 @@ import { ApiResponse } from "../../utils/apiResponse.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 
 export const createServer = asyncHandler(async (req, res) =>{
-    // const {userId} = req.params;
-    // if(req.user.id !== userId){
-    //     return res.status(404).json(new ApiError(500, "User not allowed to access this route"));
-    // }
-    const {serverName, userId} = req.body;
-    console.log(serverName)
+    const {userId} = req.params;
+    if(req.user.id !== userId){
+        return res.status(404).json(new ApiError(500, "User not allowed to access this route"));
+    }
+    const {serverName} = req.body;
+    console.log("serverName: ", serverName)
     try {
         const newServer = await db.query(`INSERT INTO Server(server_name, owner_id) VALUES($1, $2) returning *;`, [serverName, userId]);
         
@@ -56,6 +56,22 @@ export const getServerDetails = asyncHandler(async(req, res) => {
     } catch(err) {
         console.log(err)
         return req.status(500).json( new ApiError(500) );
+    }
+})
+
+export const getAllServers = asyncHandler(async (req, res) => {
+    const {userId} = req.params;
+    console.log(userId)
+    try {
+        const serverDetailsQuery = await db.query("SELECT * from server_member where member_id = $1;", [userId]);
+        if(serverDetailsQuery.rowCount === 0) {
+            return res.status(200).json( new ApiError(200, {}, "User not a part of any server"))
+        }
+        const serverDetails = serverDetailsQuery.rows[0];
+        return res.status(200).json(new ApiResponse(200, serverDetails, "Servers Data fetched successfully"));
+    } catch(err) {
+        console.log(err)
+        return res.status(500).json( new ApiError(500) );
     }
 })
 

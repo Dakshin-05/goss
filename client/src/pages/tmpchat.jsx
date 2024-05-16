@@ -2,13 +2,10 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { LocalStorage, requestHandler } from '../utils';
-import { io } from 'socket.io-client';
-import { getChat, getChatMessages, sendMessage } from '../api';
+import { deleteMessage, getChat, getChatMessages, sendMessage, editMessages } from '../api';
 import { useLocation, useParams } from 'react-router-dom';
 import TextChatBubble from '../components/tmpchat/TextChatBubble';
 
-
-// export const socket = io("http://localhost:5000", {withCredentials: true});
 
 
 const CONNECTED_EVENT = "connected";
@@ -20,6 +17,8 @@ const STOP_TYPING_EVENT = "stopTyping";
 const MESSAGE_RECEIVED_EVENT = "messageReceived";
 const LEAVE_CHAT_EVENT = "leaveChat";
 const UPDATE_GROUP_NAME_EVENT = "updateGroupName";
+const MESSAGE_DELETED_EVENT = "messageDeleted";
+const MESSAGE_EDITED_EVENT= "messageEdited"
 let state;
 let set = false;
 
@@ -58,6 +57,10 @@ const TmpChat = ()  => {
   const [isConnected, setIsConnected] = useState(false)
   const [currMessage, setCurrMessage] = useState("")
   let timeSetForDay = false;
+  
+  const [isOptionsOpen, setIsOptionsOpen] = useState(-1);
+  const [contentEditable, setContentEditable] = useState(-1);
+  const [editMessage, setEditMessage] = useState(-1);
 
   const handleMessageOnChange = (e) => {
     setCurrMessage(e.target.value)
@@ -65,12 +68,47 @@ const TmpChat = ()  => {
      
     //yet to be completed
   }
+  
+  const handleEditMessage = (mId, message) => {
+    setEditMessage(mId);
+    setCurrMessage(message)
+  }
 
+ 
+
+
+  const sendEditedMessage = async (messageId, newContent) => {
+      if (!currChat.id) return alert("No chat is selected");
+  
+      if (!socket) return alert("Socket not available");
+  
+  
+      requestHandler(
+        async () => await editMessages(user.id, currChat.id , messageId, newContent),
+        setLoadingMessages,
+        (res) => {
+          const { data } = res;
+          setMessages((prev)=> prev.map(m=>({...m, content: messageId === m.id ?newContent : m.content })))
+          setEditMessage(-1);
+          setCurrMessage("")
+        },
+        alert
+      )
+    }
+  
  
 
   const onMessageReceived = (message) => {
     console.log(message)
     setMessages((prev) => [...prev, message])
+  }
+
+  const onMessageDeleted = (messageId) => {
+    setMessages(prev => prev.filter((msg) => msg.id !== messageId));
+  }
+
+  const onMessageEdit = ({messageId, newContent}) => {
+    setMessages((prev)=> prev.map(m=>({...m, content: messageId === m.id ?newContent : m.content })))
   }
   
   useEffect(()=>{
@@ -107,6 +145,22 @@ const TmpChat = ()  => {
     );
   };
 
+  const deleteCurrMessage = async (messageId) => {
+    if (!currChat.id) return alert("No chat is selected");
+
+    if (!socket) return alert("Socket not available");
+
+
+    requestHandler(
+      async () => await deleteMessage(user.id, currChat.id , messageId),
+      setLoadingMessages,
+      (res) => {
+        const { data } = res;
+        setMessages(prev => prev.filter((msg) => msg.id !== messageId));
+      },
+      alert
+    )
+  }
   
   const handleSendMessage = async () => {
     console.log("sending message!!")
@@ -157,6 +211,8 @@ const TmpChat = ()  => {
     });
 
     socket.on(MESSAGE_RECEIVED_EVENT, onMessageReceived);
+    socket.on(MESSAGE_DELETED_EVENT, onMessageDeleted);
+    socket.on(MESSAGE_EDITED_EVENT, onMessageEdit);
     
     return () => {
       socket.off(CONNECTED_EVENT, () => {
@@ -168,6 +224,9 @@ const TmpChat = ()  => {
       });
 
       socket.off(MESSAGE_RECEIVED_EVENT, onMessageReceived);
+      socket.off(MESSAGE_DELETED_EVENT, onMessageDeleted);
+      socket.off(MESSAGE_EDITED_EVENT, onMessageEdit);
+
     };
   },[socket]);
 
@@ -215,8 +274,16 @@ const TmpChat = ()  => {
                 username={isCurrentUser ? "You" : state?.friendName }
                 timestamp={m.created_at}
                 message={m.content}
-                deliveredStatus= {m.seen ? "read" : "sent"}
+                deliveredStatus= {m.read_at !== null ? "read" : "sent"}
                 className="inline-block "
+                isOptionsOpen={isOptionsOpen}
+                setIsOptionsOpen={setIsOptionsOpen}
+                deleteCurrMessage={deleteCurrMessage}
+                contentEditable={contentEditable}
+                setContentEditable={setContentEditable}
+                handleEditMessage={handleEditMessage}
+                isRead = {m.read_at !== null}
+                chatId = {currChat.id}
               />
             </div>
             </>
@@ -236,12 +303,9 @@ const TmpChat = ()  => {
     </svg>
         </div>
         <input type="search" id="search" class="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 " placeholder="Your Message" required value={currMessage}  onChange={handleMessageOnChange} autoComplete='off'/>
-        <button type="submit" class="text-white absolute end-2.5 placeholder: bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800" onClick={handleSendMessage}>Send</button>
+        <button type="submit" class="text-white absolute end-2.5 placeholder: bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800" id='focus' onClick={()=>{editMessage === -1 ? handleSendMessage(): sendEditedMessage(editMessage, currMessage)}}>{editMessage !== -1 ? "Edit" : "Send"}</button>
     </div>
 </div>
-
-
-
 
     </div>
   )

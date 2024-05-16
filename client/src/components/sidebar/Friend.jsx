@@ -29,9 +29,9 @@ function Friend({avatar, name, username, id, friends_from, isHovered, setIsHover
       alert
     )
   }
-   const showUserInfo = () => {
-    showUserInfo = true;
-   }
+  //  const showUserInfo = () => {
+  //     UserInfo = true;
+  //  }
 
 
   return (
