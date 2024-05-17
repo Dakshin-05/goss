@@ -5,7 +5,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 
 export const makeFriendRequest = asyncHandler(async (req, res, next) => {
     const {requestedUsername} = req.body;
-
+    console.log(requestedUsername, "kl")
     if(req.params.userId !== req.user.id){
         return res.status(403).json(new ApiError(403,"User not allowed to access this route"));
     }
@@ -13,16 +13,16 @@ export const makeFriendRequest = asyncHandler(async (req, res, next) => {
     try{
         const requestedUserQuery = await db.query(`select * from profile where username=$1;`,[requestedUsername])
         if(requestedUserQuery.rows.length === 0){
-            return res.status(404).json(new ApiError(404,"Requested user not found"))
+            return res.status(202).json(new ApiResponse(202,{},"Requested user not found"))
         }    
         const requestedUser = requestedUserQuery.rows[0];
         if(requestedUser.id === req.user.id){
-            return res.status(400).json(new ApiError(400,"You cannot be friends with yourself"))
+            return res.status(201).json(new ApiResponse(201, {},"You cannot be friends with yourself"))
         }
             try{
                 const isBlockedQuery = await db.query(`select * from blocked_users where user_id=$1 and blocked_id=$2`, [requestedUser.id, req.user.id])
                 if(isBlockedQuery.rows.length !== 0){ 
-                    return res.status(404).json(new ApiError(404,"Requested user not found"))
+                    return res.status(202).json(new ApiResponse(202,{},"Requested user not found"))
                 }  
             }catch(err){
                 return res.status(500).json(new ApiError(500, "Something went wrong!!"))
@@ -210,6 +210,7 @@ export const removeBlockedUser = asyncHandler( async(req, res, next) =>{
 
 export const removeFriend = asyncHandler( async(req, res, next) =>{
     const { friendId } = req.body;
+    console.log(friendId, "fds");
     if(req.params.userId !== req.user.id){
         return res.status(403).json(new ApiError(403,  "User not allowed to access this route"));
     }

@@ -71,7 +71,7 @@ export const login = asyncHandler( async (req, res) => {
         const user = userQuery.rows[0]
 
         if(!bcrypt.compareSync(password, user.password)){
-          return res.status(500).json(new ApiError(401, "Invalid user credentials"))
+          return res.status(401).json(new ApiError(401, "Invalid user credentials"))
         }
 
         const {accessToken, refreshToken} = await generateAccessAndRefreshTokens(user.id)

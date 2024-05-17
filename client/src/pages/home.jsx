@@ -1,9 +1,10 @@
-import { SideBar } from "../components/sidebar/Sidebar";
+import {LayOut2} from "../components/Layout2";
+import SwitchTabs from "../components/SwitchTabs";
 
 function Home() {
   return (
     <>
-        <SideBar />
+        <LayOut2 Component={SwitchTabs}/>
     </>
   )
 }

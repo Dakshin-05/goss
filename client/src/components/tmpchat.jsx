@@ -4,7 +4,7 @@ import { useSocket } from '../context/SocketContext';
 import { LocalStorage, requestHandler } from '../utils';
 import { deleteMessage, getChat, getChatMessages, sendMessage, editMessages } from '../api';
 import { useLocation, useParams } from 'react-router-dom';
-import TextChatBubble from '../components/tmpchat/TextChatBubble';
+import TextChatBubble from './TextChatBubble';
 
 
 
@@ -41,14 +41,14 @@ let set = false;
 //   }
 // })
 
-const TmpChat = ()  => {
+const TmpChat = (friend)  => {
 
   const {user} = useAuth();
-  const {friendId} = useParams()
+  // const {friendId} = useParams()
   const {socket} = useSocket();
 
-  const {state} = useLocation()
-  console.log(state)
+  // const {state} = useLocation()
+  // console.log(state)
   //states
   const [currChat, setCurrChat] = useState(null);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -62,6 +62,9 @@ const TmpChat = ()  => {
   const [contentEditable, setContentEditable] = useState(-1);
   const [editMessage, setEditMessage] = useState(-1);
 
+  //changed here
+  const {friendId} = useParams()
+
   const handleMessageOnChange = (e) => {
     setCurrMessage(e.target.value)
     if (!socket || !isConnected) return;
@@ -74,7 +77,7 @@ const TmpChat = ()  => {
     setCurrMessage(message)
   }
 
- 
+ console.log(friend)
 
 
   const sendEditedMessage = async (messageId, newContent) => {
@@ -112,7 +115,7 @@ const TmpChat = ()  => {
   }
   
   useEffect(()=>{
-    window.scrollTo(0, document.body.scrollHeight);
+    window.scrollTo(0,  document.getElementById("main-chat").scrollHeight);
 
   },[messages])
  
@@ -186,8 +189,8 @@ const TmpChat = ()  => {
 
   useEffect(()=>{
     getCurrChat();
-    window.scrollTo(0, document.body.scrollHeight);
-  },[]);
+    console.log(window.scrollTo(0, document.getElementById("main-chat").scrollHeight));
+  },[friend]);
 
   useEffect(()=>{
     if(currChat){
@@ -232,23 +235,8 @@ const TmpChat = ()  => {
 
   return (
     
-    <div className='w-full h-42 select-none overflow-y-scroll no-scrollbar'>
-      Socked Id: {socket.id}
-
-
-      <nav class="flex fixed inset-x-0 top-5 items-center justify-center" aria-label="Breadcrumb">
-  
-      <div class="flex items-center">
-        
-        <a href="#" class="ms-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ms-2 dark:text-gray-400 dark:hover:text-white"></a>
-      </div>
-   
-</nav>
-
-
-
-      <h2 class=''>Messages: </h2>
-      <div class='mb-20 mx-6 select-none overflow-y-scroll no-scrollbar'
+    <div  className='relative flex flex-col items-center  h-full w-full px-4'>
+      <div  class='select-none overflow-y-scroll mb-14 w-full no-scrollbar'
       >
       <div className='flex flex-col '>
         {messages && messages.map((m) => {
@@ -271,7 +259,7 @@ const TmpChat = ()  => {
            
             <div key={m.id} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} my-3`}>
               <TextChatBubble mId={m.id}
-                username={isCurrentUser ? "You" : state?.friendName }
+                username={isCurrentUser ? "You" : friend.name }
                 timestamp={m.created_at}
                 message={m.content}
                 deliveredStatus= {m.read_at !== null ? "read" : "sent"}
@@ -292,8 +280,8 @@ const TmpChat = ()  => {
       </div>
 
       </div>
-
-<div class="fixed  mt-5 bottom-2 w-full px-2 ">   
+<div className='absolute w-full  bottom-0'>
+<div class="pt-2 t-5 w-full px-4 ">   
     <label for="search" class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>
     <div class="relative">
         <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
@@ -306,7 +294,7 @@ const TmpChat = ()  => {
         <button type="submit" class="text-white absolute end-2.5 placeholder: bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800" id='focus' onClick={()=>{editMessage === -1 ? handleSendMessage(): sendEditedMessage(editMessage, currMessage)}}>{editMessage !== -1 ? "Edit" : "Send"}</button>
     </div>
 </div>
-
+</div>
     </div>
   )
 }

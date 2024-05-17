@@ -2,12 +2,14 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/login";
 import SignUp from "./pages/signUp";
 // import ChatPage from "./pages/chat";
-import ChatPage from "./pages/tmpchat";
+// import ChatPage from "./pages/tmpchat";
 import HomePage from "./pages/home";
 import { useAuth } from "./context/AuthContext";
 import PrivateRoute from "./components/PrivateRoute";
 import PublicRoute from "./components/PublicRoute";
 import Error from "./components/Error";
+import { LayOut2 } from "./components/Layout2";
+import TmpChat from "./components/tmpchat";
 
 const App = () => {
   const {token, user} = useAuth();
@@ -28,8 +30,9 @@ const App = () => {
         path='/chat/:friendId'
         element={
           <PrivateRoute>
-            <ChatPage />
+            {/* <ChatPage /> */}
             {/* <Error/> */}
+            <LayOut2 Component={TmpChat}/>
           </PrivateRoute>
         }
       />
