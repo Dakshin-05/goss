@@ -12,6 +12,6 @@ router.post('/joinServerViaRequest', joinServerViaRequest);
 router.post('/joinServerViaLink', joinServerViaLink);
 router.post('/handleJoinRequest', handleJoinRequest);
 router.post('/leaveServer', leaveServer);
-router.post('/addNewParticipantInServer', addNewParticipantInServer);
+router.post('/:serverId/addNewParticipantInServer', addNewParticipantInServer);
 
 export default router;

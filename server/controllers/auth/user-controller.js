@@ -59,6 +59,7 @@ export const signUp = asyncHandler( async (req, res) =>{
 
 export const login = asyncHandler( async (req, res) => {
     const { usernameOrEmail, password} = req.body;
+
     if(!usernameOrEmail) {
       return res.status(400).json( new ApiError(400, "Username or email is required"));
     }

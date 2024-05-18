@@ -130,52 +130,59 @@ export const leaveServer = asyncHandler(async (req, res, next) => {
 });
 
 export const addNewParticipantInServer = asyncHandler(async (req, res, next) => {
-    const {serverId, participantId} = req.body;
-    const userId = req.id;
+    const {serverId, userId} = req.params;
+    const {participantId} = req.body;
 
     try {
-        const serverQuery = await db.query(`SELECT * from server_where server_id = $1`, [serverId]);
+        const serverQuery = await db.query(`SELECT * from server where server_id = $1`, [serverId]);
         if( serverQuery.rowCount === 0 ) {
             return res.status(404).json( new ApiError(404, "server not found"));
         } 
         try {
-            const hasAccessQuery = await db.query(`SELECT * from (SELECT * from server_member WHERE server_id = $1 AND user_id = $2) SM JOIN (SELECT * from server_roles WHERE server_id = $1 AND can_manage_channel = true)  SR where SM.server_id = SR.server_id AND SM.role_name = SR.role_name AND SR.can_manage_channel = true;`, [serverId, userId]);
+            const hasAccessQuery = await db.query(`SELECT * from (SELECT * from server_member WHERE server_id = $1 AND member_id = $2)SM JOIN (SELECT * from server_roles WHERE server_id = $1 AND can_manage_channels = true)SR ON SM.server_id = SR.server_id AND SM.role_name = SR.role_name;`, [serverId, userId]);
             if(hasAccessQuery.rowCount === 0)
                 return res.status(401).json( new ApiError(401, "User dont has the permission to add participants"))
             try {
-                const isAlreadyMember = await db.query(`SELECT * from server_member WHERE server_id = $1 AND user_id = $2;`, [serverId, participantId]);
+                const isAlreadyMember = await db.query(`SELECT * from server_member WHERE server_id = $1 AND member_id = $2;`, [serverId, participantId]);
                 if(isAlreadyMember.rowCount !== 0) {
                     return res.status(400).json( new ApiError(400, "New participant already a member"));
                 }
                 try {
-                    const isFriend = await db.query(`SELECT * from friends WHERE (member_one_id = $1 AND member_two_id = $2) OR (member_one_id=$2 AND member_two_id = $1);`, [userId, participantId]);
+                    const isFriend = await db.query(`SELECT * from chat WHERE (member_one_id = $1 AND member_two_id = $2) OR (member_one_id=$2 AND member_two_id = $1);`, [userId, participantId]);
                     try {
-                        const newParticipant = await db.query(`INSERT INTO server_member(server_id, user_id) VALUES ($1, $2) returning *;`, [serverId, userId]);
-                        try {
-                            const participantsQuery = await db.query(`SELECT user_id FROM server_member WHERE server_id = $1;`, [serverId]);
-                            if( participantsQuery.rowCount === 0) {
-                                return res.status(500).json( new ApiError(500, "Couldnt fetch participants"));
-                            }
-                            const participants = participantsQuery.rows;
-                            participants.forEach( (participant) => {
-                                emitSocketEvent(req, participant.id.toString(), ChatEventEnum.JOIN_SERVER_EVENT, newParticipant);
-                            })
-                        } catch {
-                            return res.status(500).json( new ApiError(500) );
-                        }
-                    } catch {
-                        return res.status(500).json( new ApiError(500) );
+                        const newParticipant = await db.query(`INSERT INTO server_member(server_id, member_id, role_name) VALUES ($1, $2, $3) returning *;`, [serverId, userId, 'member']);
+                        // try {
+                        //     const participantsQuery = await db.query(`SELECT user_id FROM server_member WHERE server_id = $1;`, [serverId]);
+                        //     if( participantsQuery.rowCount === 0) {
+                        //         return res.status(500).json( new ApiError(500, "Couldnt fetch participants"));
+                        //     }
+                        //     const participants = participantsQuery.rows;
+                        //     participants.forEach( (participant) => {
+                        //         emitSocketEvent(req, participant.id.toString(), ChatEventEnum.JOIN_SERVER_EVENT, newParticipant);
+                        //     })
+                        // } catch(err) {
+                        //     console.log(err)
+                        //     return res.status(500).json( new ApiError(500, {}, "6") );
+                        // }
+                        return res.status(200).json(new ApiResponse(200, {newParticipant: newParticipant}, "User added successfully"))
+                    } catch(err) {
+                        console.log(err)
+                        return res.status(500).json( new ApiError(500, {}, "5") );
                     }
-                } catch {
-                    return res.status(500).json( new ApiError(500) );
+                } catch(err) {
+                    console.log(err)
+                    return res.status(500).json( new ApiError(500, {}, "4") );
                 }
-            } catch {
-                return res.status(500).json( new ApiError(500) );
+            } catch(err) {
+            console.log(err)
+
+                return res.status(500).json( new ApiError(500, {}, "3") );
             }
-        } catch {
-            return res.status(500).json( new ApiError(500) );
+        } catch(err) {
+            console.log(err)
+            return res.status(500).json( new ApiError(500, {}, "2") );
         }
     } catch {
-        return res.status(500).json( new ApiError(500) );
+        return res.status(500).json( new ApiError(500, {}, "1") );
     }
 });

@@ -38,7 +38,7 @@ export const getServerDetails = asyncHandler(async(req, res) => {
             return res.status(404).json( new ApiError(404, "Server not found"))
         }
         
-        const serverDetails = serverDetailsQuery.rows[0] || [];
+        const serverDetails = serverDetailsQuery.rows[0];
         
         try {
             // const channelDetailsQuery = await db.query(`SELECT * from Channels C JOIN (SELECT * from Server where server_id = $1) S WHERE S.server_id = C.server_id;`, [serverId]);
@@ -47,8 +47,7 @@ export const getServerDetails = asyncHandler(async(req, res) => {
                 return res.status(404).json(new ApiError(404, "Channels not found"));
             }
             const channelsDetails = channelDetailsQuery.rows[0];
-            const payload = [...serverDetails, ...channelsDetails]
-            return res.status(200).json(new ApiResponse(200, payload, "Server Data fetched successfully"));
+            return res.status(200).json(new ApiResponse(200, {serverDetails: serverDetails, channelsDetails: channelsDetails}, "Server Data fetched successfully"));
         } catch(err) {
             console.log(err)
             return res.status(500).json( new ApiError(500) );
@@ -67,24 +66,23 @@ export const getAllServers = asyncHandler(async (req, res) => {
         if(serverDetailsQuery.rowCount === 0) {
             return res.status(200).json( new ApiError(200, {}, "User not a part of any server"))
         }
-        const serverDetails = serverDetailsQuery.rows[0];
-        return res.status(200).json(new ApiResponse(200, serverDetails, "Servers Data fetched successfully"));
+        const serverDetails = serverDetailsQuery.rows;
+        return res.status(200).json(new ApiResponse(200, {serverDetails:serverDetails}, "Servers Data fetched successfully"));
     } catch(err) {
         console.log(err)
-        return res.status(500).json( new ApiError(500) );
+        return res.status(500).json( new ApiError(500, "Not fetching servers") );
     }
 })
 
 export const channelDetails = asyncHandler(async(req, res) => {
-    const {channelId} = req.params;
+    const {serverId, channelId} = req.params;
     try{
-            const channelDetailsQuery = await db.query(`SELECT * from Channels C JOIN (SELECT * from Server where server_id = $1) S WHERE S.server_id = C.server_id;`, [serverId]);
+            const channelDetailsQuery = await db.query(`SELECT * from (SELECT * from Channels C WHERE C.channel_id = $2) C JOIN (SELECT * from server where server_id = $1) S ON S.server_id = C.server_id;`, [serverId, channelId]);
             if(channelDetailsQuery.rowCount === 0) {
                 return res.status(404).json(new ApiError(404, "Channels not found"));
             }
             const channelsDetails = channelDetailsQuery.rows[0];
-            const payload = [...serverDetails, ...channelsDetails]
-            return res.status(200).json(new ApiResponse(200, payload, "Server Data fetched successfully"));
+            return res.status(200).json(new ApiResponse(200, {channelsDetails:channelsDetails}, "Channel Data fetched successfully"));
         } catch(err) {
             console.log(err)
             return res.status(500).json( new ApiError(500) );
@@ -108,13 +106,13 @@ export const renameServer = asyncHandler(async(req, res, next) => {
         try{
             const memberQuery = await db.query(`SELECT * from server_member where server_id = $1 AND member_id = $2;` , [serverId, userId]);
             if( memberQuery.rowCount === 0) {
-                return res.status(401).json( new ApiError(401,{}, "User not a part of the channel"));
+                return res.status(401).json( new ApiError(401, {}, "User not a part of the channel"));
             }
             try {
                 const user = memberQuery.rows[0];
-                const hasPermission = await db.query(`SELECT * from server_roles where server_id = $1 AND channel_id = $2 AND server_roles = $3 AND can_manage_channel = true;`, [serverId, channelId, user.role])
+                const hasPermission = await db.query(`SELECT * from server_roles where server_id = $1  AND role_name = $2 AND can_manage_channels = true;`, [serverId, user.role_name])
                 if(hasPermission.rowCount === 0) {
-                    return res.status(401).json( new ApiError(401, 'User does not has the previlage to change the channel name'))
+                    return res.status(401).json( new ApiError(401, {}, 'User does not has the previlage to change the channel name'))
                 }
                 try {
                     const renamedServerQuery = await db.query(`UPDATE server SET server_name = $1 where server_id = $2 RETURNING *;`, [newName, serverId]);
@@ -124,14 +122,14 @@ export const renameServer = asyncHandler(async(req, res, next) => {
                     try {
                         const participants = await db.query(`SELECT * from server_member where server_id = $1`, [serverId]);
                         if(participants.rowCount === 0) {
-                            return res.status(500).json( new ApiError(500, "No participants"))
+                            return res.status(500).json( new ApiError(500, {},  "No participants"))
                         }
                     
-                        const payload =  renamedServerQuery.rows[0];
-                        participants.rows.forEach( (participant) => {
-                            emitSocketEvent(req, participant.id.toString(), ChatEventEnum.UPDATE_GROUP_NAME_EVENT, payload)
-                        });
-                        return res.status(200).json(ApiResponse(200, payload, "Server Renamed successfully"));
+                        // const payload =  renamedServerQuery.rows[0];
+                        // participants.rows.forEach( (participant) => {
+                        //     emitSocketEvent(req, participant.id.toString(), ChatEventEnum.UPDATE_GROUP_NAME_EVENT, payload)
+                        // });
+                        return res.status(200).json(new ApiResponse(200, {}, "Server Renamed successfully"));
                     } catch(err) {
                         console.log(err)
                         return res.status(500).json( new ApiError(500) );
@@ -154,69 +152,64 @@ export const renameServer = asyncHandler(async(req, res, next) => {
     }
 })
 
-
 export const renameChannel = asyncHandler(async(req, res, next) => {
-    const {serverId, channelId} = req.params;
-    const userId = req.id;
+    const {userId, serverId, channelId} = req.params;
+
     const {newName} = req.body;
+
+    console.log(newName)
 
     try {
         const channelDetailsQuery = await db.query(`SELECT * from Channels where server_id = $1 AND channel_id  = $2;`, [serverId, channelId]);
         
         if( channelDetailsQuery.rowCount === 0) {
-            return res.status(404).json(new ApiError("Channel not found") );
+            return res.status(404).json(new ApiError(404, {}, "Channel not found") );
         } 
         const channelDetails = channelDetailsQuery.rows[0];
+
+        console.log(channelDetails)
         
         try{
-            const memberQuery = await db.query(`SELECT * from server_member where serverId = $1 AND member_id = $2;` , [serverId, userId]);
+            const memberQuery = await db.query(`SELECT * from server_member where server_id = $1 AND member_id = $2;` , [serverId, userId]);
             if( memberQuery.rowCount === 0) {
-                return res.status(401).json( new ApiError(401, "User not a part of the channel"));
+                return res.status(401).json( new ApiError(401, {},  "User not a part of the channel"));
             }
             try {
                 const user = memberQuery.rows[0];
-                const hasPermission = await db.query(`SELECT * from server_roles where server_id = $1 AND channel_id = $2 AND server_roles = $3 AND can_manage_channel = true;`, [serverId, channelId, user.role])
+                const hasPermission = await db.query(`SELECT * from server_roles where server_id = $1 AND role_name = $2 AND can_manage_channels = true;`, [serverId,  user.role_name])
+                console.log(hasPermission.rows)
                 if(hasPermission.rowCount === 0) {
-                    return res.status(401).json( new ApiError(401, 'User does not has the previlage to change the channel name'))
+                    return res.status(401).json( new ApiError(401, {},  'User does not has the previlage to change the channel name'))
                 }
                 try {
                     const renamedChannelQuery = await db.query(`UPDATE channels SET channel_name = $1 where channel_id = $2 AND server_id = $3 RETURNING *;`, [newName, channelId, serverId]);
+                    console.log(renamedChannelQuery.rows)
                     if(renamedChannelQuery.rowCount === 0 || renamedChannelQuery.rows[0].channel_name.toString() !== newName) {
-                        return res.status(501).json( new ApiError(501, "Change not implemented"))
+                        return res.status(501).json( new ApiError(501, {},  "Change not implemented"))
                     }
-                    try {
-                        const participants = await db.query(`SELECT * from server_member where server_id = $1`, [serverId]);
-                        if(participants.rowCount === 0) {
-                            return res.status(500).json( new ApiError(500, "No participants"))
-                        }
-    
-                        const payload =  renamedChannelQuery.rows[0];
-                        participants.rows.forEach( (participant) => {
-                            emitSocketEvent(req, participant.id.toString(), ChatEventEnum.UPDATE_GROUP_NAME_EVENT, payload)
-                        });
-                    } catch(err) {
-                        console.log(err)
-                        return req.status(500).json( new ApiError(500) );
-                    }        
+                    
+                    return res.status(200).json(new ApiResponse(200, {}, "Channel renamed successfully"))
                 } catch(err) {
                     console.log(err)
-                    return req.status(500).json( new ApiError(500) );
+                    return res.status(500).json( new ApiError(500, {}, "4") );
                 }
             } catch(err) {
                 console.log(err)
-                return res.status(500).json( new ApiError(500) );
+                return res.status(500).json( new ApiError(500, {}, "3") );
+
 
             }
         } catch(err) {
             console.log(err)
-            return res.status(500).json( new ApiError(500) );
+            return res.status(500).json( new ApiError(500, {}, "2") );
+
         }
     } catch(err) {
         console.log(err)
-        return req.status(500).json( new ApiError(500) );
+        return res.status(500).json( new ApiError(500, {}, "1") );
+
     }
 })
-
 
 export const deleteServer = asyncHandler(async(req, res) => {
     const {serverId} = req.params;
@@ -236,14 +229,7 @@ export const deleteServer = asyncHandler(async(req, res) => {
             }
             try {
                 const user = memberQuery.rows[0];
-                const hasPermission = await db.query(`SELECT * from server_roles where server_id = $1 AND server_roles = $2
-                
-                
-                
-                
-                
-                
-                AND IS_ADMINISTRATOR = true;`, [serverId, channelId, user.role])
+                const hasPermission = await db.query(`SELECT * from server_roles where server_id = $1 AND server_roles = $2 AND IS_ADMINISTRATOR = true;`, [serverId, channelId, user.role])
                 if(hasPermission.rowCount === 0) {
                     return res.status(401).json( new ApiError(401, 'User does not has the previlage to change the channel name'))
                 }
@@ -276,6 +262,97 @@ export const deleteServer = asyncHandler(async(req, res) => {
         }
     } catch(err) {
         console.log(err)
+        return req.status(500).json( new ApiError(500) );
+    }
+})
+
+export const transferOwnerShip = asyncHandler(async (req, res) => {
+    const {serverId, newOwnerId} = req.params;
+    const userId = req.id;
+
+    try {
+        const serverDetailsQuery = await db.query(`SELECT * from Server where server_id = $1;`, [serverId]);
+        
+        if( serverDetailsQuery.rowCount === 0) {
+            return res.status(404).json(new ApiError("Server not found") );
+        } 
+        try{
+            const userDetailsQuery = await db.query(`SELECT * from server_member where serverId = $1 AND member_id = $2;` , [serverId, userId]);
+            if( userDetailsQuery.rowCount === 0) {
+                return res.status(401).json( new ApiError(401, "User not a part of the server"));
+            }
+            try {
+                const newOwnerDetailsQuery = await db.query(`SELECT * from server_member where serverId = $1 AND member_id = $2 AND  $2 != $3;`,[serverId, newOwnerId, userId]);
+                if( newOwnerDetailsQuery.rowCount === 0) {
+                    return res.status(401).json( new ApiError(401, "User who's gonna be new owner is not a part of the server"));
+                }
+                try {
+                    const hasPermission = await db.query(`SELECT * from server where server_id = $1 AND owner_id = $2`, [serverId, userId])
+                    if(hasPermission.rowCount === 0) {
+                        return res.status(401).json( new ApiError(401, 'User does not has the previlage to transfer Ownership'))
+                    }
+                        try {
+                            await db.query(`UPDATE server SET owner_id = $1 WHERE server_id = $2;`, [newOwnerId, serverId]); 
+                            return res.status(200).json( new ApiResponse(200, {newOwnerDetails:newOwnerDetailsQuery.rows[0]}, "Ownership transferred successfully"))
+                        } catch(err) {
+                            console.log(err)
+                            return res.status(500).json( new ApiError(500) );
+                        }  
+                } catch(err) {
+                    console.log(err)
+                    return req.status(500).json( new ApiError(500) );
+                }
+            } catch (err) {
+                return req.status(500).json( new ApiError(500) );
+            }
+        } catch(err) {
+            console.log(err)
+            return req.status(500).json( new ApiError(500) );
+        }
+    } catch(err) {
+        console.log(err)
+        return req.status(500).json( new ApiError(500) );
+    }
+})
+
+
+export const createRole = asyncHandler(async (req, res) => {
+    const {serverId, userId} = req.params;
+    const {role_name, view_channel, manage_channel, delete_channel, manage_permission, invite, kick_member, ban_member, send_message, attach_file, manage_message, create_poll, create_event, manage_event, is_administrator} = req.body;
+
+    try {
+        const serverDetailsQuery = await db.query(`SELECT * from Server where server_id = $1;`, [serverId]);
+        
+        if( serverDetailsQuery.rowCount === 0) {
+            return res.status(404).json(new ApiError("Server not found") );
+        } 
+        try{
+            const memberQuery = await db.query(`SELECT * from server_member where serverId = $1 AND member_id = $2;`, [serverId, userId]);
+            if( memberQuery.rowCount === 0) {
+                return res.status(401).json( new ApiError(401, "User not a part of the channel"));
+            }
+            try {
+                const user = memberQuery.rows[0];
+                const hasPermission = await db.query(`SELECT * from server where server_id = $1 AND owner_id = $2;`, [serverId, userId])
+                if(hasPermission.rowCount === 0) {
+                    return res.status(401).json( new ApiError(401, 'User does not has the previlage to add roles to the server'));
+                }
+                try {
+                    const newRole = await db.query(`INSERT INTO server_roles VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) return *;`, [serverId, role_name, view_channel, manage_channel, delete_channel, manage_permission, invite, kick_member, ban_member, send_message, attach_file, manage_message, create_poll, create_event, manage_event, is_administrator]);
+                    if( newRole.rowCount === 0) {
+                        return res.status(501).json( new ApiError(401, 'Error occured while creating new role'));
+                    }
+                    return res.status(200).json( new ApiResponse(200, {newRole:newRole.rows[0]}, "Role created successfully"))
+                } catch(err) {
+                    return req.status(500).json( new ApiError(500) );
+                }
+            } catch(err) {
+                return req.status(500).json( new ApiError(500) );
+            }
+        } catch {
+            return req.status(500).json( new ApiError(500) );
+        }
+    } catch(err) {
         return req.status(500).json( new ApiError(500) );
     }
 })

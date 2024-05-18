@@ -10,6 +10,11 @@ import PublicRoute from "./components/PublicRoute";
 import Error from "./components/Error";
 import { LayOut2 } from "./components/Layout2";
 import TmpChat from "./components/tmpchat";
+import ProfileCard from "./components/Profile";
+import ServerSide from "./components/ServerSide";
+import Render from "./components/Render";
+import ServerPage from "./components/ServerPage";
+import Roles from "./components/Roles";
 
 const App = () => {
   const {token, user} = useAuth();
@@ -40,7 +45,14 @@ const App = () => {
         path='/home'
         element={
           <PrivateRoute>
-            <HomePage />
+            {/* <HomePage /> */}
+            <div className="flex justify-center items-center min-h-screen bg-gray-900">
+              {/* <ProfileCard /> */}
+              {/* <ServerSide /> */}
+              {/* <Render/> */}
+              {/* <ServerPage/> */}
+              <Roles/>
+            </div>
           </PrivateRoute>
         }
       />
