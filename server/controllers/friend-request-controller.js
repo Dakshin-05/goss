@@ -5,7 +5,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 
 export const makeFriendRequest = asyncHandler(async (req, res, next) => {
     const {requestedUsername} = req.body;
-    console.log(requestedUsername, "kl")
+    console.log(requestedUsername, "friend_request")
     if(req.params.userId !== req.user.id){
         return res.status(403).json(new ApiError(403,"User not allowed to access this route"));
     }
@@ -25,6 +25,7 @@ export const makeFriendRequest = asyncHandler(async (req, res, next) => {
                     return res.status(202).json(new ApiResponse(202,{},"Requested user not found"))
                 }  
             }catch(err){
+                console.log(err)
                 return res.status(500).json(new ApiError(500, "Something went wrong!!"))
             }
             
@@ -40,6 +41,7 @@ export const makeFriendRequest = asyncHandler(async (req, res, next) => {
                             "You are already friends with that user")); 
                         }
             } catch (err){
+                console.log(err)
                 return res.status(500).json(new ApiError(500,  "Something went wrong!!"))
             }
 
@@ -49,6 +51,7 @@ export const makeFriendRequest = asyncHandler(async (req, res, next) => {
                     return res.status(200).json(new ApiResponse(200, {}, "Request sent successfully"));
                 }
             } catch (err){
+                console.log(err)
                 return res.status(500).json(new ApiError(500,  "Something went wrong!!"))
             }
 
@@ -60,16 +63,19 @@ export const makeFriendRequest = asyncHandler(async (req, res, next) => {
                         await db.query(`update friend_request set status = $1 where from_id = $2 and to_id = $3`, ['accepted', requestedUser.id, req.user.id ])
                         return res.status(200).json(new ApiResponse(200, {}, "You are now friends with the requested user"));
                     }catch(err){
+                        console.log(err)
                         return res.status(500).json(new ApiError(500,  "Something went wrong!!"))
                     }
                 }
             } catch (err){
+                console.log(err)
                 return res.status(500).json(new ApiError(500,  "Something went wrong!!"))
             }
             await db.query(`insert into friend_request (from_id, to_id) values ($1, $2)`, [req.user.id, requestedUser.id])
             return res.status(200).json(new ApiResponse(200, {}, "Request sent successfully"));
 
         }catch(err){
+            console.log(err)
             return res.status(500).json(new ApiError(500, "Something went wrong!!"))
         }
 
@@ -98,9 +104,9 @@ export const handleFriendRequest = asyncHandler(async (req, res, next) => {
 })
 
 export const getAllFriends =  asyncHandler(async (req, res, next) => {
-    if(req.params.userId !== req.user.id){
-        return res.status(403).json(new ApiError(403, "User not allowed to access this route"));
-    }
+    // if(req.params.userId !== req.user.id){
+    //     return res.status(403).json(new ApiError(403, "User not allowed to access this route"));
+    // }
     // const allFriendsQuery = await db.query(`select id, username, name, friends_from from profile where profile.id in ((select friend_id from friends where user_id=$1) union (select user_id from friends where friend_id=$1)) `, [req.user.id])
 
     try{

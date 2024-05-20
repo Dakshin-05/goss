@@ -3,7 +3,7 @@ import { requestHandler } from '../utils';
 import { createServer } from '../api';
 import { useAuth } from '../context/AuthContext';
 
-function CreateServer({setIsOpen}) {
+function CreateServer({setIsOpen, loadServers}) {
     const {user} = useAuth();
     const [newServerName, setNewServerName] = useState("");
     const handleInputOnChange = (e) => {
@@ -19,6 +19,8 @@ function CreateServer({setIsOpen}) {
       (res) => {
           console.log(res)
           setIsOpen(false)
+          loadServers()
+          
       },
       alert
     );

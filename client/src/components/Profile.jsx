@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ProfileCard = () => {
+const ProfileCard1 = () => {
   return (
     <div className="bg-gray-800 rounded-lg w-80 text-white font-sans">
       <div className="bg-red-500 p-4 rounded-t-lg flex items-center relative">
@@ -33,4 +33,4 @@ const ProfileCard = () => {
   );
 };
 
-export default ProfileCard;
+export default ProfileCard1;

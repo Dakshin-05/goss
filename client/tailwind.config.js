@@ -11,6 +11,10 @@ export default {
         dark: "#212328",
         danger: "#eb3330",
         success: "#4aac68",
+        sidebarblue: "#5865F2",
+        base: "#1E1F22",
+        lightbase: "#2B2D31",
+        hoverbase: "#404249"
       },
       width: { 
         '350': '350px', 

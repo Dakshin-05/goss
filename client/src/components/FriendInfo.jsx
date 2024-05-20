@@ -1,13 +1,76 @@
 import { Textarea } from 'flowbite-react'
-import React from 'react'
+import React, { useCallback } from 'react'
+import ProfileCard from './userinfo/ProfileCard.jsx'
+import { requestHandler } from '../utils/index.js';
+import { getAllFriends, getAllServers } from '../api/index.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
-function FriendInfo({friendInfo}) {
-   console.log(friendInfo)
+
+function FriendInfo({friendInfo, servers, friends}) {
+   
+   // console.log(friendInfo)
+   const user = {
+      avatarUrl: 'https://cdn.discordapp.com/avatars/user_id/avatar.png',
+      name: friendInfo.name,
+      username: friendInfo.username,
+      friends_from: friendInfo.friends_from,
+      id: friendInfo.id,
+      mutualFriends: 0,
+      mutualServers: 0,
+      servers: 0,
+      friends: 0 
+    };
+
+   let friendServer = null;
+   let friendFriends = null;
+   // const loadServers = useCallback(async () => {
+   //    await requestHandler(
+   //      async () => await getAllServers(user.id),
+   //      null,
+   //      (res) => {
+   //          console.log(res)
+   //          friendServer = res.data.serverDetails;
+   //          const server1ID = servers.map( (server) => server.id )
+   //          const server2ID = friendServer.map( (server) => server.id )
+         
+   //          user.mutualServers = server2ID.filter( (serverID) => server1ID.includes(serverID) ).length;
+   //          user.servers = friendServer.length;
+
+   //      },
+   //      alert
+   //    );
+   // }, []);
+
+   
+   const loadFriends = useCallback(async () => {
+      await requestHandler(
+        async () => await getAllFriends(user.id),
+        null,
+        (res) => {
+            friendFriends = (res.data.allFriends);
+            console.log(friendFriends)
+            const friend1ID = friends.map( (friend) => friend.id );
+            const friend2ID = friendFriends.map( (friend) => friend.id );
+            // console.log(friend1ID)
+            user.mutualFriends = friend1ID.filter( (friendID) => friend2ID.includes(friendID) ).length
+            user.friends = friendFriends.length;
+            console.log(user)
+        },
+        alert
+      );
+   }, []);
+
+   loadFriends();
+   // loadServers();
+
+   // console.log(user)
+   
+
   return (
     <>
        <aside id="separator-sidebar" class=" lg:w-full w-0 h-full transition-transform -translate-x-full sm:translate-x-0" aria-label="Sidebar">
-         <div class="h-full lg:w-full w-0 px-3 py-4 overflow-y-auto bg-gray-50 dark:bg-gray-800">
-            <ul class="space-y-2 font-medium">
+         <div class="h-full lg:w-full w-0 px-3 py-4 overflow-y-auto bg-gray-50 dark:bg-lightbase">
+            {/* <ul class="space-y-2 font-medium">
                <li>
                   <a href="#" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
                      <svg class="flex-shrink-0 lg:w-5 w-0 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 18">
@@ -17,8 +80,8 @@ function FriendInfo({friendInfo}) {
                      
                   </a>
                </li>
-            </ul>
-            <ul class="pt-4 mt-4 space-y-2 font-medium border-t border-gray-200 dark:border-gray-700">
+            </ul> */}
+            {/* <ul class="pt-4 mt-4 space-y-2 font-medium border-t border-gray-200 dark:border-gray-700">
             <li>
                <div class="max-w-sm pb-4 bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
                   <a href="#">
@@ -61,7 +124,9 @@ function FriendInfo({friendInfo}) {
                </div>
             </li>
 
-            </ul>
+            </ul> */}
+            
+            <ProfileCard user={user}/>
          </div>
       </aside>
 

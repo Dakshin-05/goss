@@ -7,11 +7,10 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 
 export const createServer = asyncHandler(async (req, res) =>{
     const {userId} = req.params;
+    const {serverName} = req.body;
     if(req.user.id !== userId){
         return res.status(404).json(new ApiError(500, "User not allowed to access this route"));
     }
-    const {serverName} = req.body;
-    console.log("serverName: ", serverName)
     try {
         const newServer = await db.query(`INSERT INTO Server(server_name, owner_id) VALUES($1, $2) returning *;`, [serverName, userId]);
         
@@ -25,6 +24,50 @@ export const createServer = asyncHandler(async (req, res) =>{
     } catch(err){
         console.log(err)
         
+        return res.status(500).json( new ApiError(500) );
+    }
+})
+
+export const createChannel = asyncHandler(async (req, res) =>{
+    const {userId, serverId} = req.params;
+    const {channelName} = req.body;
+    if(req.user.id !== userId){
+        return res.status(404).json(new ApiError(500, "User not allowed to access this route"));
+    }
+    try {
+        const serverQuery = await db.query(`SELECT * from server WHERE server_id = $1;`, [serverId]);
+        if(serverQuery.rowCount === 0) {
+            return res.status(404).json( new ApiError(404, {}, "Server not found") )
+        }
+        try {
+            const isMemberQuery = await db.query("SELECT * from server_member WHERE server_id = $1 AND member_id = $2;", [serverId, userId]);
+            if( isMemberQuery.rowCount === 0) {
+                return res.status(502).json( new ApiError(502, "User not a part of the server") );
+            }
+            const member = isMemberQuery.rows[0];
+            try {
+                const canCreateChannel = await db.query(`SELECT * from server_roles WHERE server_id = $1 AND role_name = $2 AND can_manage_channels = true;`,[serverId, member.role_name]);
+                if(canCreateChannel.rowCount === 0) {
+                    return res.status(403).json( new ApiError(403, {}, "User not alllowed to create channel") )
+                }
+                try {
+                    const newChannel = await db.query(`INSERT INTO Channels(channel_name, server_id, creator_id) VALUES($1, $2, $3) returning *;`, [channelName, serverId, userId]);
+                    
+                    if(newChannel.rowCount === 0) {
+                        return res.status(404).json(new ApiError(404, {},  "Error while creating server"));
+                    }
+                    return res.status(200).json(new ApiResponse(200, newChannel.rows[0] , "Server created successfully"));
+                } catch(err) {
+                    return res.status(500).json( new ApiError(500) );
+                }
+            } catch(err) {
+                return res.status(500).json( new ApiError(500) );
+            }
+        } catch(err) {
+            return res.status(500).json( new ApiError(500) );
+        }        
+    } catch(err){
+        console.log(err) 
         return res.status(500).json( new ApiError(500) );
     }
 })
@@ -62,7 +105,7 @@ export const getAllServers = asyncHandler(async (req, res) => {
     const {userId} = req.params;
     console.log(userId)
     try {
-        const serverDetailsQuery = await db.query("SELECT * from server_member where member_id = $1;", [userId]);
+        const serverDetailsQuery = await db.query("SELECT * from (SELECT * from server_member where member_id = $1) SM JOIN server S ON S.server_id = SM.server_id;", [userId]);
         if(serverDetailsQuery.rowCount === 0) {
             return res.status(200).json( new ApiError(200, {}, "User not a part of any server"))
         }

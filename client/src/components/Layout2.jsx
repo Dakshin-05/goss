@@ -25,6 +25,7 @@ export function LayOut2({Component}) {
    const [friends, setFriends] = useState([]);
    const [directMessages, setDirectMessages] = useState([])
    const [onlineUsers, setOnlineUsers] = useState("");
+   const [servers, setServer] = useState([])
 
    const loadFriends = useCallback(async () => {
       await requestHandler(
@@ -44,6 +45,7 @@ export function LayOut2({Component}) {
         null,
         (res) => {
             console.log(res)
+            setServer(res.data.serverDetails)
         },
         alert
       );
@@ -99,7 +101,7 @@ export function LayOut2({Component}) {
     </div> */}
     <div className="flex flex-row">
       <div className="h-screen w-20">
-      <ServerSideBar setIsOpen={setIsOpen}/>
+      <ServerSideBar servers={servers} setIsOpen={setIsOpen}/>
       </div>
       <div className="h-screen w-72">
       <SideBar directMessage = {directMessages} setDirectMessages={setDirectMessages}/>
@@ -114,15 +116,15 @@ export function LayOut2({Component}) {
         </div>
         <div className="lg:w-3/12 w-0 h-auto bg-red-100">
           {
-            friendInfo  && 
-            <FriendInfo friendInfo={friendInfo}/>
+            Object.keys(friendInfo)  && 
+            <FriendInfo friendInfo={friendInfo} friends={friends} servers ={servers} />
           }
         </div>
       </div>
     
     </div>
       {
-         isOpen && <CreateServer setIsOpen={setIsOpen}/>
+         isOpen && <CreateServer setIsOpen={setIsOpen} loadServers={loadServers}/>
       }
     </div>
     </>

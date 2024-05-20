@@ -64,15 +64,20 @@ export const login = asyncHandler( async (req, res) => {
       return res.status(400).json( new ApiError(400, "Username or email is required"));
     }
     try{
-        const userQuery =  await db.query(`select * from profile where username=$1 or email=$1`,[usernameOrEmail]) 
-
-        if(userQuery.rows.length === 0){
-          return res.status(500).json(new ApiError (500, "User does not exist"))
-        }
-        const user = userQuery.rows[0]
+      const userQuery =  await db.query(`select * from profile where username=$1 or email=$1`,[usernameOrEmail]) 
+      if(userQuery.rows.length === 0){
+        return res.status(500).json(new ApiError (500, "User does not exist"))
+      }
+      const user = userQuery.rows[0]
+      console.log("user id", user.id, );
 
         if(!bcrypt.compareSync(password, user.password)){
-          return res.status(401).json(new ApiError(401, "Invalid user credentials"))
+          try {
+            return res.status(401).json(new ApiError(401,{}, "Invalid user credentials"))
+
+          }catch(err){
+            console.log(err)
+          }
         }
 
         const {accessToken, refreshToken} = await generateAccessAndRefreshTokens(user.id)

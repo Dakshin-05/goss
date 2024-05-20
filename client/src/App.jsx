@@ -15,6 +15,7 @@ import ServerSide from "./components/ServerSide";
 import Render from "./components/Render";
 import ServerPage from "./components/ServerPage";
 import Roles from "./components/Roles";
+import FriendInfo from "./components/FriendInfo";
 
 const App = () => {
   const {token, user} = useAuth();
@@ -45,14 +46,15 @@ const App = () => {
         path='/home'
         element={
           <PrivateRoute>
-            {/* <HomePage /> */}
-            <div className="flex justify-center items-center min-h-screen bg-gray-900">
+            <HomePage />
+            {/* <div className="flex justify-center items-center min-h-screen bg-gray-900"> */}
               {/* <ProfileCard /> */}
               {/* <ServerSide /> */}
+              {/* <FriendInfo /> */}
               {/* <Render/> */}
               {/* <ServerPage/> */}
-              <Roles/>
-            </div>
+              {/* <Roles/> */}
+            {/* </div> */}
           </PrivateRoute>
         }
       />

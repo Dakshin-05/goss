@@ -1,7 +1,7 @@
 import {Router} from 'express';
 import { verifyJWT } from '../../middlewares/auth-middlewares.js';
 
-import { channelDetails, createServer, deleteServer, getAllServers, getServerDetails, renameChannel, renameServer, transferOwnerShip } from '../../controllers/server/server-operation-controller.js';
+import { channelDetails, createChannel, createServer, deleteServer, getAllServers, getServerDetails, renameChannel, renameServer, transferOwnerShip } from '../../controllers/server/server-operation-controller.js';
 
 
 const router = Router({ mergeParams: true });
@@ -17,5 +17,6 @@ router.patch('/:serverId/renameServer', renameServer);
 router.patch('/:serverId/:channelId/renameChannel', renameChannel);
 router.delete('/:serverId/deleteServer', deleteServer);
 router.patch('/:serverId/transferOwnerShip', transferOwnerShip);
+router.post('/:serverId/addNewParticipantInServer', createChannel);
 
 export default router;
