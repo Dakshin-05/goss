@@ -85,15 +85,13 @@ export function LayOut2({Component}) {
   const [friendChat, setFriendChat] = useState(null);
   const [tabs, setTabs] = useState("online");
   const [friendInfo, setFriendInfo] = useState({});
-
-  
+  const [isRequesting, setIsRequesting] = useState(false);
+  console.log(friendInfo)
 
 
   return (
     <>
     {/* <div className="flex flex-row">
-   
-     
       <div class="p-4 sm:ml-64 mr-96">
          <TabsComponent friendChat={friendChat} setFriendChat={setFriendChat} />
       </div>
@@ -104,7 +102,8 @@ export function LayOut2({Component}) {
       <ServerSideBar servers={servers} setIsOpen={setIsOpen}/>
       </div>
       <div className="h-screen w-72">
-      <SideBar directMessage = {directMessages} setDirectMessages={setDirectMessages}/>
+      <SideBar directMessage = {directMessages} setDirectMessages={setDirectMessages} setFriendInfo={setFriendInfo}  isRequesting={isRequesting}
+            setIsRequesting={setIsRequesting}/>
       </div>
       <div className="flex flex-col w-full">
       <div className="h-14 ">
@@ -112,16 +111,18 @@ export function LayOut2({Component}) {
       </div>
       <div className="flex flex-row">
         <div id="main-chat" className="mt-5 lg:w-10/12 overflow-y-scroll h-[90vh] w-full no-scrollbar">
-            <Component tabs={tabs} setTabs={setTabs} friendChat={friendChat} setFriendChat={setFriendChat} setFriendInfo={setFriendInfo} />
+            <Component tabs={tabs} setTabs={setTabs} friendChat={friendChat} setFriendChat={setFriendChat} setFriendInfo={setFriendInfo} isRequesting={isRequesting}
+            setIsRequesting={setIsRequesting}/>
         </div>
-        <div className="lg:w-3/12 w-0 h-auto bg-red-100">
+        <div className="lg:w-3/12 w-0 h-auto bg-gray-50 dark:bg-lightbase">
           {
-            Object.keys(friendInfo)  && 
-            <FriendInfo friendInfo={friendInfo} friends={friends} servers ={servers} />
+            Object.keys(friendInfo).length !== 0 ? 
+            <FriendInfo friendInfo={friendInfo} friends={friends} servers ={servers} /> : <div className="flex flex-col items-center justify-center mt-20">
+              <p>It's quiet for now...</p>
+              <p>Make friends and start chatting!</p></div>
           }
         </div>
       </div>
-    
     </div>
       {
          isOpen && <CreateServer setIsOpen={setIsOpen} loadServers={loadServers}/>

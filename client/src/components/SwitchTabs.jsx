@@ -26,14 +26,13 @@ import Chat from "./Chat.jsx";
 import Tmp from "./tmp.jsx"
 import TmpChat from './tmpchat.jsx';
 
-function SwitchTabs({tabs, setTabs, friendChat, setFriendChat, setFriendInfo}) {
+function SwitchTabs({tabs, setTabs, friendChat, setFriendChat, setFriendInfo, isRequesting, setIsRequesting}) {
       const { user } = useAuth();
       const {socket} = useSocket()
       const [friends, setFriends] = useState([]);
       const [pendingRequests, setPendingRequests] = useState([]);
       const [blockedUsers, setBlockedUsers] = useState([])
       const [isHovered, setIsHovered ] = useState(-1);
-      const [isRequesting, setIsRequesting] = useState(false);
       const [onlineUsers, setOnlineUsers] = useState();
       const [userInfo, setUserInfo] = useState({});
 

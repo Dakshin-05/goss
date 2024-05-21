@@ -2,6 +2,8 @@ import React from 'react'
 import { FaPlus } from "react-icons/fa";
 import { FiLogOut } from "react-icons/fi";
 import { useAuth } from '../context/AuthContext';
+import { MdExplore } from "react-icons/md";
+
 
 function ServerSideBar({servers, setIsOpen, showServer}) {
 
@@ -36,7 +38,10 @@ function ServerSideBar({servers, setIsOpen, showServer}) {
 </svg>
 
       </div>
-
+      <div class="m-2 w-14 flex justify-center items-center h-14 rounded-e-2xl rounded-s-2xl  bg-sidebarblue ">
+    <MdExplore size={24}/>
+      </div>
+<hr />
       {logos}
       <ul class="pt-4 mt-4 space-y-2 font-medium  fixed bottom-0">
         <li>

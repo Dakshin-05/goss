@@ -104,6 +104,10 @@ const getAllServers = (userId) => {
     return apiClient.get(`/user/${userId}/getAllServers`)
 }
 
+const blockUser = (userId, data) => {
+    return apiClient.patch(`/user/${userId}/blockUser`,  data)
+}
+
 export {
     getChatMessages,
     getUserChat,
@@ -124,5 +128,6 @@ export {
     getChat,
     getAllChats,
     createServer,
-    getAllServers
+    getAllServers,
+    blockUser
 };

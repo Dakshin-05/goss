@@ -110,7 +110,7 @@ export const getAllFriends =  asyncHandler(async (req, res, next) => {
     // const allFriendsQuery = await db.query(`select id, username, name, friends_from from profile where profile.id in ((select friend_id from friends where user_id=$1) union (select user_id from friends where friend_id=$1)) `, [req.user.id])
 
     try{
-        const allFriendsQuery = await db.query(`select id, username, name, friends_from from profile join friends on (profile.id=user_id or profile.id=friend_id) where (user_id=$1 or friend_id=$1) and id != $1`, [req.user.id])
+        const allFriendsQuery = await db.query(`select id, username, name, friends_from from profile join friends on (profile.id=user_id or profile.id=friend_id) where (user_id=$1 or friend_id=$1) and id != $1`, [req.params.userId])
    
     return res.status(200).json(new ApiResponse(200, {allFriends: allFriendsQuery.rows}, "fetched successfully"))
     }catch(err){
@@ -161,7 +161,7 @@ export const removePendingRequest = asyncHandler( async (req, res, next) => {
 
 export const blockUser = asyncHandler(async (req, res, next) => {
     const {toId} = req.body;
-
+    console.log(toId, "toid")
     if(req.params.userId !== req.user.id){
         return res.status(403).json(new ApiError(403, "User not allowed to access this route"));
     }

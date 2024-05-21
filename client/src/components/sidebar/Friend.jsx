@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { requestHandler } from "../../utils"
-import { deleteFriend } from "../../api"
+import { deleteFriend, blockUser } from "../../api"
 import { useAuth } from "../../context/AuthContext"
 import UserInfo from "../FriendInfo"
 
@@ -22,6 +22,14 @@ function Friend({avatar, name, username, id, friends_from, isHovered, setIsHover
   const removeFriend = async() => {
     await requestHandler(
       async () => await deleteFriend(user.id, {friendId:id}),
+      setIsRequesting,
+      () => {},
+      alert
+    )
+  }
+  const blockFriend = async() => {
+    await requestHandler(
+      async () => await blockUser(user.id, {toId:id}),
       setIsRequesting,
       () => {},
       alert
@@ -71,15 +79,15 @@ function Friend({avatar, name, username, id, friends_from, isHovered, setIsHover
                 <div class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white" onClick={removeFriend}>Remove Friend</div>
               </li>
               <li>
-                <div class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Start Video Chat</div>
+                <div class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white" onClick={blockFriend}>Block User</div>
               </li>
-              <li>
+              {/* <li>
                 <div class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Start Audio Chat</div>
-              </li>
+              </li> */}
             </ul>
-            <div class="py-2">
+            {/* <div class="py-2">
               <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">Further link</a>
-            </div>
+            </div> */}
         </div>
         }
         </div>  

@@ -1,5 +1,5 @@
 import { Textarea } from 'flowbite-react'
-import React, { useCallback } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import ProfileCard from './userinfo/ProfileCard.jsx'
 import { requestHandler } from '../utils/index.js';
 import { getAllFriends, getAllServers } from '../api/index.js';
@@ -8,62 +8,55 @@ import { useAuth } from '../context/AuthContext.jsx';
 
 function FriendInfo({friendInfo, servers, friends}) {
    
-   // console.log(friendInfo)
-   const user = {
-      avatarUrl: 'https://cdn.discordapp.com/avatars/user_id/avatar.png',
-      name: friendInfo.name,
-      username: friendInfo.username,
-      friends_from: friendInfo.friends_from,
-      id: friendInfo.id,
-      mutualFriends: 0,
-      mutualServers: 0,
-      servers: 0,
-      friends: 0 
-    };
+   console.log(friendInfo)
+   const avatarUrl =  'https://cdn.discordapp.com/avatars/user_id/avatar.png'
+   const [mutualFriends, setMutualFriends ] = useState(0);
+   const [mutualServers, setMutualServers ] = useState(0);
+   const [numServers, setNumServers] = useState(0);
+   const [numFriends, setNumFriends] = useState(0);
 
-   let friendServer = null;
-   let friendFriends = null;
-   // const loadServers = useCallback(async () => {
-   //    await requestHandler(
-   //      async () => await getAllServers(user.id),
-   //      null,
-   //      (res) => {
-   //          console.log(res)
-   //          friendServer = res.data.serverDetails;
-   //          const server1ID = servers.map( (server) => server.id )
-   //          const server2ID = friendServer.map( (server) => server.id )
-         
-   //          user.mutualServers = server2ID.filter( (serverID) => server1ID.includes(serverID) ).length;
-   //          user.servers = friendServer.length;
 
-   //      },
-   //      alert
-   //    );
-   // }, []);
-
-   
-   const loadFriends = useCallback(async () => {
+    const loadServers = async () => {
       await requestHandler(
-        async () => await getAllFriends(user.id),
+        async () => await getAllServers(friendInfo.id),
         null,
         (res) => {
-            friendFriends = (res.data.allFriends);
-            console.log(friendFriends)
-            const friend1ID = friends.map( (friend) => friend.id );
-            const friend2ID = friendFriends.map( (friend) => friend.id );
-            // console.log(friend1ID)
-            user.mutualFriends = friend1ID.filter( (friendID) => friend2ID.includes(friendID) ).length
-            user.friends = friendFriends.length;
-            console.log(user)
+            const friendServer = res.data.serverDetails;
+            const server1ID = servers.map( (server) => server.id )
+            const server2ID = friendServer.map( (server) => server.id )
+            setMutualServers(server2ID.filter( (serverID) => server1ID.includes(serverID) ).length)
+            setNumServers(friendServer.length);
+
         },
         alert
       );
-   }, []);
+   };
 
-   loadFriends();
-   // loadServers();
+   const loadFriends = async () => {
+      await requestHandler(
+        async () => await getAllFriends(friendInfo.id),
+        null,
+        (res) => {
+            const friendFriends = (res.data.allFriends);
+            const friend1ID = friends.map( (friend) => friend.id );
+            const friend2ID = friendFriends.map( (friend) => friend.id );
+            setMutualFriends(friend2ID.filter( (friendID) => friend1ID.includes(friendID) ).length)
+            setNumFriends(friendFriends.length);
+            console.log(friendInfo, friend1ID, friend2ID, friendFriends)
 
-   // console.log(user)
+        },
+        alert
+      );
+   };
+
+
+    useEffect(() => {
+      if(friendInfo.id){
+         loadFriends();
+         loadServers();
+      }
+     
+    },[friendInfo, servers, friends])
    
 
   return (
@@ -126,7 +119,7 @@ function FriendInfo({friendInfo, servers, friends}) {
 
             </ul> */}
             
-            <ProfileCard user={user}/>
+            <ProfileCard avatarUrl={avatarUrl} name={friendInfo.name} username={friendInfo.username} friendsFrom={friendInfo.friends_from} mutualFriends={mutualFriends} mutualServers={mutualServers} numFriends={numFriends} numServers={numServers}/>
          </div>
       </aside>
 

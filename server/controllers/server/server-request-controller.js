@@ -6,25 +6,27 @@ import { ApiResponse } from "../../utils/apiResponse.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 
 export const joinServerViaRequest = asyncHandler(async (req, res) => {
-    const userId = req.id;
-    const { requestedServerId } = req.body;
+    const userId = req.user.id;
+    // const { requestedServerId } = req.body;
+    const {requestedServerName} = req.body;
 
-    if(req.params.userId !== req.id) {
+    if(req.params.userId !== req.user.id) {
         return res.status(403).json(new ApiResponse(403, {}, "User not allowed to access this route"));
     }
 
     try {
-        const requestedServer = await db.query(`select * from server where server_name = $1;`, [requestedServerId]);
-        if(requestedServer.rows.length === 0) {
+        const requestedServerQuery = await db.query(`select * from server where server_name = $1;`, [requestedServerName]);
+        if(requestedServerQuery.rows.length === 0) {
             return res.status(404).json({message: "Requested server not found"})
         }
+        const requestedServer = requestedServer.rows[0];
         try {
             const isBannedUser = await db.query(`select * from server_request where username = $1 and status = $2;`, [userId, 'banned']);
             if(isBannedUser.rows.length !== 0) {
                 return res.status(403).json({message: "Used Banned"});
             }
             try {
-                await db.query(`insert into server_request (user_id, server_id) values ($1, $2);`, [userId, requestedServerId])
+                await db.query(`insert into server_request (user_id, server_id) values ($1, $2);`, [userId, requestedServer.id])
                 return req.status(200).json({message: "Request send successfully"})
             } catch (err) {
                 return res.status(500).json( new ApiError(500) );
