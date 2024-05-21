@@ -30,13 +30,13 @@ function TextChatBubble({username,timestamp, message, deliveredStatus, mId, isOp
     // }, [status, mId, socket, username]); // Add deliveredStatus as a dependency
     
     useEffect(()=>{
-        if(username !== 'You' && status === "sent")
+        if(chatId !== undefined && username !== 'You' && status === "sent")
             socket.emit(MESSAGE_DELIVERED_EVENT, {chatId: chatId, messageId: mId})
 
     },[]);
 
     useEffect(()=>{
-        if(username === 'You')
+        if(chatId !== undefined && username === 'You')
             socket.on(MESSAGE_DELIVERED_EVENT, onMessageRead);
     },[])
  

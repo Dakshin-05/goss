@@ -104,8 +104,29 @@ const getAllServers = (userId) => {
     return apiClient.get(`/user/${userId}/getAllServers`)
 }
 
+const getServerDetails = (userId, serverId) => {
+    return apiClient.get(`/user/${userId}/${serverId}/getServerDetails`);
+}
+
+const getAllParticipants = (userId, serverId) => {
+    return apiClient.get(`/user/${userId}/${serverId}/getAllParticipants`);
+}
+
+const getChannelChatMessages = (userId, serverId, channelId) => {
+    return apiClient.get(`/user/${userId}/${serverId}/${channelId}/getChannelChats`);
+}
+
+const sendChannelMessage = (userId, serverId, channelId, content) => {
+    return apiClient.post(`/user/${userId}/${serverId}/${channelId}/sendMessage`, {content: content});
+};
+
 const blockUser = (userId, data) => {
     return apiClient.patch(`/user/${userId}/blockUser`,  data)
+}
+
+
+const createChannel = (userId,serverId, data) => {
+    return apiClient.post(`/user/${userId}/${serverId}/createChannel`, data);
 }
 
 export {
@@ -129,5 +150,10 @@ export {
     getAllChats,
     createServer,
     getAllServers,
-    blockUser
+    getServerDetails,
+    getAllParticipants,
+    getChannelChatMessages,
+    sendChannelMessage,
+    blockUser, 
+    createChannel
 };

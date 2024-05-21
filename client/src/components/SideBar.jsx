@@ -1,11 +1,11 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import DirectMessage from './sidebar/DirectMessage'
 import { BiMessageAdd } from "react-icons/bi";
 import { useNavigate } from 'react-router-dom';
 import UserInfo from './FriendInfo';
 
 
-function SideBar({directMessage, setDirectMessages, setFriendInfo, isRequesting, setIsRequesting}) {
+function SideBar({directMessage, setDirectMessages, setFriendInfo, isRequesting, setIsRequesting,}) {
    const navigate = useNavigate()
    const addDirectMessage = () => {
       // want to finish this part
@@ -14,6 +14,7 @@ function SideBar({directMessage, setDirectMessages, setFriendInfo, isRequesting,
    const redirectHome = () => {
       navigate('/home')
    }
+
 
   return (
     <>

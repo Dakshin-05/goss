@@ -4,7 +4,7 @@ import SwitchTabs from "../components/SwitchTabs";
 function Home() {
   return (
     <>
-        <LayOut2 Component={SwitchTabs}/>
+        <LayOut2 Component1={SwitchTabs}/>
     </>
   )
 }

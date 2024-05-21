@@ -56,7 +56,7 @@ export const createChannel = asyncHandler(async (req, res) =>{
                     if(newChannel.rowCount === 0) {
                         return res.status(404).json(new ApiError(404, {},  "Error while creating server"));
                     }
-                    return res.status(200).json(new ApiResponse(200, newChannel.rows[0] , "Server created successfully"));
+                    return res.status(200).json(new ApiResponse(200, {newChannel:newChannel.rows[0]} , "Server created successfully"));
                 } catch(err) {
                     return res.status(500).json( new ApiError(500) );
                 }
@@ -89,7 +89,7 @@ export const getServerDetails = asyncHandler(async(req, res) => {
             if(channelDetailsQuery.rowCount === 0) {
                 return res.status(404).json(new ApiError(404, "Channels not found"));
             }
-            const channelsDetails = channelDetailsQuery.rows[0];
+            const channelsDetails = channelDetailsQuery.rows;
             return res.status(200).json(new ApiResponse(200, {serverDetails: serverDetails, channelsDetails: channelsDetails}, "Server Data fetched successfully"));
         } catch(err) {
             console.log(err)
@@ -97,7 +97,7 @@ export const getServerDetails = asyncHandler(async(req, res) => {
         } 
     } catch(err) {
         console.log(err)
-        return req.status(500).json( new ApiError(500) );
+        return res.status(500).json( new ApiError(500) );
     }
 })
 
@@ -105,7 +105,7 @@ export const getAllServers = asyncHandler(async (req, res) => {
     const {userId} = req.params;
     console.log(userId)
     try {
-        const serverDetailsQuery = await db.query("SELECT * from (SELECT * from server_member where member_id = $1) SM JOIN server S ON S.server_id = SM.server_id;", [userId]);
+        const serverDetailsQuery = await db.query("SELECT * from (SELECT * from server_member where member_id = $1) SM JOIN server S ON S.server_id = SM.server_id JOIN (SELECT * from channels WHERE channel_name = 'General') C ON C.server_id = S.server_id;", [userId]);
         if(serverDetailsQuery.rowCount === 0) {
             return res.status(200).json( new ApiError(200, {}, "User not a part of any server"))
         }
@@ -114,6 +114,42 @@ export const getAllServers = asyncHandler(async (req, res) => {
     } catch(err) {
         console.log(err)
         return res.status(500).json( new ApiError(500, "Not fetching servers") );
+    }
+})
+
+export const getAllParticipants = asyncHandler(async(req, res) => {
+    const {userId, serverId} = req.params;
+    try {
+        const serverDetailsQuery = await db.query(`SELECT * from Server where server_id = $1;`, [serverId]);
+        
+        if(serverDetailsQuery.rowCount === 0) {
+            return res.status(404).json( new ApiError(404, "Server not found"))
+        }
+        
+        const serverDetails = serverDetailsQuery.rows[0];
+        
+        try {
+            const isParticipantQuery = await db.query(`SELECT * from server_member where server_id=$1 and member_id = $2`, [serverId, userId]);
+            if(isParticipantQuery.rowCount === 0) {
+                return res.status(404).json(new ApiError(404, "User not a part of sever"));
+            }
+            try {
+                const participantsQuery = await db.query(`SELECT * from (SELECT * from server_member where server_id = $1) SM JOIN Profile P ON P.id = SM.member_id ;`, [serverId]);
+                if( participantsQuery.rowCount === 0) {
+                    return res.status(500).json( new ApiError(500, "Cant fetch members from server"));
+                }
+                return res.status(200).json(new ApiResponse(200, {participants: participantsQuery.rows}, "Participants fetched successfully"));
+            } catch(err) {
+                console.log(err);
+                return res.status(500).json( new ApiError(500) );
+            }
+        } catch(err) {
+            console.log(err)
+            return res.status(500).json( new ApiError(500) );
+        } 
+    } catch(err) {
+        console.log(err)
+        return res.status(500).json( new ApiError(500) );
     }
 })
 
@@ -131,6 +167,106 @@ export const channelDetails = asyncHandler(async(req, res) => {
             return res.status(500).json( new ApiError(500) );
         }
 })
+
+export const getChannelChats = asyncHandler( async(req, res) => {
+    const {userId, serverId, channelId} = req.params;
+
+    if(req.params.userId !== req.user.id){
+        return res.status(403).json(new ApiError(403,{}, "User not allowed to access this route"));
+    }
+
+    try {
+        const serverDetailsQuery = await db.query(`SELECT * from Server where server_id = $1;`, [serverId]);
+        
+        if(serverDetailsQuery.rowCount === 0) {
+            return res.status(404).json( new ApiError(404,{}, "Server not found"))
+        }
+        
+        try {
+            const isParticipantQuery = await db.query(`SELECT * from server_member where server_id=$1 and member_id = $2`, [serverId, userId]);
+            if(isParticipantQuery.rowCount === 0) {
+                return res.status(404).json(new ApiError(404,{}, "User not a part of sever"));
+            }
+
+            try{
+                const channelDetailQuery = await db.query(`SELECT * from Channels C WHERE C.channel_id = $1 AND C.server_id = $2;`, [channelId, serverId])
+                if(channelDetailQuery.rowCount === 0){
+                    return res.status(404).json(new ApiError(404,{}, "Channel does not exist"));
+                }
+
+                try {
+                    const channelMessages = await db.query(`SELECT * FROM channel_message where channel_id=$1;`, [channelId])
+                    if(channelDetailQuery.rowCount === 0){
+                        return res.status(200).json( new ApiResponse(200, {}, "No messages yet!..."))
+                    }
+
+                    return res.status(200).json(new ApiResponse(200, {messages:channelMessages.rows}, "Messages fetched successfully!..."))
+
+                } catch(err) {
+                    console.log(err)
+                    return res.status(500).json( new ApiError(500, {}, "Something went wrong!!"))
+                }
+
+            } catch (err){
+                console.log(err)
+
+                return res.status(500).json( new ApiError(500, {}, "Something went wrong!!"))
+            }
+
+        } catch (err){
+            console.log(err)
+
+            return res.status(500).json( new ApiError(500, {}, "Something went wrong!!"))
+        }
+    } catch(err) {
+        console.log(err)
+        return res.status(500).json( new ApiError(500, {}, "Something went wrong!!"))
+    }
+}) 
+
+export const sendMessage = asyncHandler(async (req, res) => {
+    const { serverId, channelId } = req.params;
+    const {content} = req.body;
+    console.log(content);
+    if (!content) {
+        return res.status(400).json(new ApiError(400, {}, "Message content is required"));
+    }
+
+    try {
+        console.log("3")
+        const serverQuery = await db.query("SELECT * FROM server WHERE server_id = $1", [serverId]);
+        
+        if (serverQuery.rowCount === 0) {
+            console.log("1")
+            return res.status(404).json(new ApiError(404, {}, "Server does not exist"));
+        }
+
+        try{
+            const channelQuery = await db.query("SELECT * FROM channels WHERE server_id = $1 and channel_id = $2", [serverId, channelId]);
+        
+            if (channelQuery.rowCount === 0) {
+                console.log("2")
+                return res.status(404).json(new ApiError(404, {}, "Channel does not exist..."));
+            }
+
+            try {
+                const message = await db.query("INSERT INTO channel_message (channel_id, sender_id, content) VALUES ($1, $2, $3) RETURNING *", [channelId, req.user.id, content]);
+               
+                emitSocketEvent(req, channelId, ChatEventEnum.MESSAGE_RECEIVED_EVENT, message.rows[0]);
+            
+                return res.status(200).json(new ApiResponse(200, { message: message.rows[0] }, "Message saved successfully"));
+            } catch (err) {
+                return res.status(500).json(new ApiResponse(500, {}, "Something went wrong"));
+            }
+
+        }catch(err) {
+            return res.status(500).json(new ApiResponse(500, {}, "Something went wrong"));
+        }
+        
+    } catch (err) {
+        return res.status(500).json(new ApiResponse(500, {}, "Something went wrong"));
+    }
+});
 
 export const renameServer = asyncHandler(async(req, res, next) => {
     const {serverId} = req.params;
@@ -293,19 +429,19 @@ export const deleteServer = asyncHandler(async(req, res) => {
                     }         
                 } catch(err) {
                     console.log(err)
-                    return req.status(500).json( new ApiError(500) );
+                    return res.status(500).json( new ApiError(500) );
                 }
             } catch(err) {
                 console.log(err)
-                return req.status(500).json( new ApiError(500) );
+                return res.status(500).json( new ApiError(500) );
             }
         } catch(err) {
             console.log(err)
-            return req.status(500).json( new ApiError(500) );
+            return res.status(500).json( new ApiError(500) );
         }
     } catch(err) {
         console.log(err)
-        return req.status(500).json( new ApiError(500) );
+        return res.status(500).json( new ApiError(500) );
     }
 })
 
@@ -343,18 +479,18 @@ export const transferOwnerShip = asyncHandler(async (req, res) => {
                         }  
                 } catch(err) {
                     console.log(err)
-                    return req.status(500).json( new ApiError(500) );
+                    return res.status(500).json( new ApiError(500) );
                 }
             } catch (err) {
-                return req.status(500).json( new ApiError(500) );
+                return res.status(500).json( new ApiError(500) );
             }
         } catch(err) {
             console.log(err)
-            return req.status(500).json( new ApiError(500) );
+            return res.status(500).json( new ApiError(500) );
         }
     } catch(err) {
         console.log(err)
-        return req.status(500).json( new ApiError(500) );
+        return res.status(500).json( new ApiError(500) );
     }
 })
 
@@ -387,15 +523,15 @@ export const createRole = asyncHandler(async (req, res) => {
                     }
                     return res.status(200).json( new ApiResponse(200, {newRole:newRole.rows[0]}, "Role created successfully"))
                 } catch(err) {
-                    return req.status(500).json( new ApiError(500) );
+                    return res.status(500).json( new ApiError(500) );
                 }
             } catch(err) {
-                return req.status(500).json( new ApiError(500) );
+                return res.status(500).json( new ApiError(500) );
             }
         } catch {
-            return req.status(500).json( new ApiError(500) );
+            return res.status(500).json( new ApiError(500) );
         }
     } catch(err) {
-        return req.status(500).json( new ApiError(500) );
+        return res.status(500).json( new ApiError(500) );
     }
 })

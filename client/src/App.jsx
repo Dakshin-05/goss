@@ -10,12 +10,15 @@ import PublicRoute from "./components/PublicRoute";
 import Error from "./components/Error";
 import { LayOut2 } from "./components/Layout2";
 import TmpChat from "./components/tmpchat";
+import ChannelChat from "./components/ChannelChat";
 import ProfileCard from "./components/Profile";
 import ServerSide from "./components/ServerSide";
 import Render from "./components/Render";
 import ServerPage from "./components/ServerPage";
 import Roles from "./components/Roles";
 import FriendInfo from "./components/FriendInfo";
+import ParticipantBar from "./components/ParticipantBar";
+import SideBar from "./components/ChannelDetails";
 
 const App = () => {
   const {token, user} = useAuth();
@@ -38,7 +41,17 @@ const App = () => {
           <PrivateRoute>
             {/* <ChatPage /> */}
             {/* <Error/> */}
-            <LayOut2 Component={TmpChat}/>
+            <LayOut2 Component1={TmpChat}/>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path='/channels/:serverId/:channelId'
+        element={
+          <PrivateRoute>
+            {/* <ChatPage /> */}
+            {/* <Error/> */}
+            <LayOut2 Component1={ChannelChat} Component2={ParticipantBar} Component3={SideBar}/>
           </PrivateRoute>
         }
       />

@@ -7,7 +7,7 @@ import UserInfo from "../FriendInfo"
 
 
 
-function Friend({avatar, name, username, id, friends_from, isHovered, setIsHovered, setIsRequesting, handleUserInfo, setFriendChat, setFriendInfo}) {
+function Friend({avatar, name, username, id, friends_from, isHovered, setIsHovered, setIsRequesting, handleUserInfo, setFriendChat, setFriendInfo,}) {
 
   const {user, setFriendId} = useAuth()
   const navigate = useNavigate()
@@ -31,7 +31,9 @@ function Friend({avatar, name, username, id, friends_from, isHovered, setIsHover
     await requestHandler(
       async () => await blockUser(user.id, {toId:id}),
       setIsRequesting,
-      () => {},
+      () => {
+ 
+      },
       alert
     )
   }

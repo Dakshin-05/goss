@@ -13,6 +13,13 @@ const mountJoinChatEvent = (socket) => {
     })
 }
 
+const mountJoinChannelChatEvent = (socket) => {
+    socket.on(ChatEventEnum.JOIN_CHANNEL_CHAT_EVENT, (channelId)=>{
+        console.log(`User joined the channel 🤝. channelId:`, channelId);
+        socket.join(channelId)
+    })
+}
+
 const mountParticipantTypingEvent = (socket) => {
     socket.on(ChatEventEnum.TYPING_EVENT, (chatId)=> {
         socket.in(chatId).emit(ChatEventEnum.TYPING_EVENT, chatId)
@@ -74,6 +81,7 @@ const initializeSocketIO = (io) => {
             console.log("User connected 🗼. userId: ", user.id.toString());
 
             mountJoinChatEvent(socket);
+            mountJoinChannelChatEvent(socket);
             mountParticipantTypingEvent(socket);
             mountParticipantStoppedTypingEvent(socket);
             mountMessageDeliveredEvent(socket);

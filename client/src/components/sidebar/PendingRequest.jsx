@@ -4,13 +4,15 @@ import { acceptOrIgnorePendingRequest, removePendingRequest } from '../../api'
 import { useAuth } from '../../context/AuthContext'
 import ToolTip from '../ToolTip'
 
-const PendingRequest = ({avatar, name, username, id, type, setIsRequesting}) => {
+const PendingRequest = ({avatar, name, username, id, type, setIsRequesting, }) => {
   const {user} = useAuth()
   const handleIncomingPendingRequest = async(status) => {
     await requestHandler(
       async () => await acceptOrIgnorePendingRequest(user.id, {fromId:id, status:status}),
       setIsRequesting,
-      () => {},
+      () => {
+      
+      },
       alert
     )
   }

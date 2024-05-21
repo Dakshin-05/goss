@@ -218,7 +218,7 @@ export const removeFriend = asyncHandler( async(req, res, next) =>{
     const { friendId } = req.body;
     console.log(friendId, "fds");
     if(req.params.userId !== req.user.id){
-        return res.status(403).json(new ApiError(403,  "User not allowed to access this route"));
+        return res.status(403).json(new ApiError(403,"User not allowed to access this route"));
     }
     try {
 
@@ -227,15 +227,17 @@ export const removeFriend = asyncHandler( async(req, res, next) =>{
             return res.status(404).json(new ApiError(404,"Requested user not found"))
         }    
         try{
-            const deleteFriendQuery = await db.query(`delete from chat where (member_one_id=$1 and member_two_id=$2) or (member_one_id=$2 and member_two_id=$1)`, [req.user.id, friendId])
+            const deleteFriendQuery = await db.query(`update chat set deleted_at = current_timestamp where (member_one_id=$1 and member_two_id=$2) or (member_one_id=$2 and member_two_id=$1)`, [req.user.id, friendId,])
             if(deleteFriendQuery.rowCount === 0){
                 return res.status(201).json(new ApiResponse(201, {},"User is not friend"))
             }
             return res.status(200).json(new ApiResponse(200, {},"Removed Friend successfully"))
         }catch(err){
-            return res.status(500).json(new ApiError(500, "Something went wrong!!"))
+            console.log(err)
+            return res.status(500).json(new ApiError(500,"Something went wrong!!"))
         }
     } catch (err) {
+        console.log(err)
         return res.status(500).json(new ApiError(500, "Something went wrong!!"))
     }
     

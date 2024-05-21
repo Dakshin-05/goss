@@ -16,11 +16,16 @@ import { FaUserFriends } from "react-icons/fa";
 import Tabs from "./Tabs.jsx";
 import TmpChat from "./tmpchat.jsx";
 import SwitchTabs from "./SwitchTabs.jsx";
+import ParticipantBar from "./ParticipantBar.jsx";
+import { useParams } from "react-router-dom";
+import CreateEvent from "./CreateEvent.jsx"
+import AddChannel from "./AddChannel.jsx"
 
 
 
-export function LayOut2({Component}) {
+export function LayOut2({Component1, Component2, Component3}) {
    const { user } = useAuth();
+   const { serverId } = useParams();
    const {socket} = useSocket();
    const [friends, setFriends] = useState([]);
    const [directMessages, setDirectMessages] = useState([])
@@ -86,8 +91,15 @@ export function LayOut2({Component}) {
   const [tabs, setTabs] = useState("online");
   const [friendInfo, setFriendInfo] = useState({});
   const [isRequesting, setIsRequesting] = useState(false);
-  console.log(friendInfo)
+  const [isEventOpen, setIsEventOpen] = useState(false)
+  const [isAddChannelOpen, setIsAddChannelOpen] = useState(false);
 
+  const [channels, setChannels] = useState([]);
+
+
+  console.log(friendInfo)
+  console.log(isEventOpen
+  )
 
   return (
     <>
@@ -102,8 +114,8 @@ export function LayOut2({Component}) {
       <ServerSideBar servers={servers} setIsOpen={setIsOpen}/>
       </div>
       <div className="h-screen w-72">
-      <SideBar directMessage = {directMessages} setDirectMessages={setDirectMessages} setFriendInfo={setFriendInfo}  isRequesting={isRequesting}
-            setIsRequesting={setIsRequesting}/>
+      {(Component3 === undefined)?(<SideBar  directMessage = {directMessages} setDirectMessages={setDirectMessages} setFriendInfo={setFriendInfo}  isRequesting={isRequesting}
+            setIsRequesting={setIsRequesting}/>):<Component3 channels={channels} setChannels={setChannels} serverId={serverId} setIsEventOpen={setIsEventOpen} setIsAddChannelOpen={setIsAddChannelOpen}/> }
       </div>
       <div className="flex flex-col w-full">
       <div className="h-14 ">
@@ -111,21 +123,27 @@ export function LayOut2({Component}) {
       </div>
       <div className="flex flex-row">
         <div id="main-chat" className="mt-5 lg:w-10/12 overflow-y-scroll h-[90vh] w-full no-scrollbar">
-            <Component tabs={tabs} setTabs={setTabs} friendChat={friendChat} setFriendChat={setFriendChat} setFriendInfo={setFriendInfo} isRequesting={isRequesting}
-            setIsRequesting={setIsRequesting}/>
+            <Component1 tabs={tabs} setTabs={setTabs} friendChat={friendChat} setFriendChat={setFriendChat} setFriendInfo={setFriendInfo} isRequesting={isRequesting}
+            setIsRequesting={setIsRequesting} setDirectMessages={setDirectMessages}/>
         </div>
         <div className="lg:w-3/12 w-0 h-auto bg-gray-50 dark:bg-lightbase">
-          {
-            Object.keys(friendInfo).length !== 0 ? 
+          {(Component2 === undefined)?
+           (Object.keys(friendInfo).length !== 0 ? 
             <FriendInfo friendInfo={friendInfo} friends={friends} servers ={servers} /> : <div className="flex flex-col items-center justify-center mt-20">
               <p>It's quiet for now...</p>
-              <p>Make friends and start chatting!</p></div>
-          }
+              <p>Make friends and start chatting!</p></div>)
+          : <Component2 serverId={serverId}/>}
         </div>
       </div>
     </div>
       {
          isOpen && <CreateServer setIsOpen={setIsOpen} loadServers={loadServers}/>
+      }
+      {
+         isEventOpen && <CreateEvent setIsEventOpen={setIsEventOpen} />
+      }
+      {
+         isAddChannelOpen && <AddChannel setIsAddChannelOpen={setIsAddChannelOpen} serverId={serverId} setChannels={setChannels}/>
       }
     </div>
     </>

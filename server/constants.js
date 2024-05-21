@@ -12,7 +12,8 @@ export const ChatEventEnum = Object.freeze({
     STOP_TYPING_EVENT: "stopTyping",
     TYPING_EVENT: "typing",
     ONLINE_EVENT: "online",
-    MESSAGE_DELIVERED_EVENT: "delivered"
+    MESSAGE_DELIVERED_EVENT: "delivered",
+    JOIN_CHANNEL_CHAT_EVENT: "joinChannelChat"
   });
   
   export const AvailableChatEvents = Object.values(ChatEventEnum);

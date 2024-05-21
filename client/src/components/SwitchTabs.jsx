@@ -26,7 +26,7 @@ import Chat from "./Chat.jsx";
 import Tmp from "./tmp.jsx"
 import TmpChat from './tmpchat.jsx';
 
-function SwitchTabs({tabs, setTabs, friendChat, setFriendChat, setFriendInfo, isRequesting, setIsRequesting}) {
+function SwitchTabs({tabs, setTabs, friendChat, setFriendChat, setFriendInfo, isRequesting, setIsRequesting, setDirectMessages}) {
       const { user } = useAuth();
       const {socket} = useSocket()
       const [friends, setFriends] = useState([]);
@@ -49,6 +49,7 @@ function SwitchTabs({tabs, setTabs, friendChat, setFriendChat, setFriendInfo, is
             null,
             (res) => {
                 setFriends(res.data.allFriends)
+                setDirectMessages(res.data.allFriends)
             },
             alert
           );
@@ -124,11 +125,12 @@ function SwitchTabs({tabs, setTabs, friendChat, setFriendChat, setFriendInfo, is
                 <Friend  key={f.id} id={f.id} name={f.name} username={f.username} friends_from={f.friends_from} setFriends={setFriends} isHovered={isHovered} setIsHovered={setIsHovered} setIsRequesting={setIsRequesting} handleUserInfo={handleUserInfo}
                 setFriendChat={setFriendChat}
                 setFriendInfo={setFriendInfo}
+                
                 />
              ))}
             {
             tabs === "pending" && pendingRequests && pendingRequests[0] && pendingRequests[0].map((pr) => (
-                <PendingRequest key={pr.id} name={pr.name} username={pr.username} id={pr.id} type="incoming" setIsRequesting={setIsRequesting} />
+                <PendingRequest key={pr.id} name={pr.name} username={pr.username} id={pr.id} type="incoming" setIsRequesting={setIsRequesting}  />
                 ))}
             {tabs === "pending" && pendingRequests && pendingRequests[1] && pendingRequests[1].map((pr) => (
                 <PendingRequest key={pr.id} name={pr.name} id={pr.id} username={pr.username} type="outgoing" setIsRequesting={setIsRequesting} />
