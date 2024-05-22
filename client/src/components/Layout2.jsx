@@ -20,6 +20,7 @@ import ParticipantBar from "./ParticipantBar.jsx";
 import { useParams } from "react-router-dom";
 import CreateEvent from "./CreateEvent.jsx"
 import AddChannel from "./AddChannel.jsx"
+import JoinServer from "./JoinServer.jsx";
 
 
 
@@ -31,6 +32,7 @@ export function LayOut2({Component1, Component2, Component3}) {
    const [directMessages, setDirectMessages] = useState([])
    const [onlineUsers, setOnlineUsers] = useState("");
    const [servers, setServer] = useState([])
+   const [events, setEvents] = useState([]);
 
    const loadFriends = useCallback(async () => {
       await requestHandler(
@@ -93,9 +95,11 @@ export function LayOut2({Component1, Component2, Component3}) {
   const [isRequesting, setIsRequesting] = useState(false);
   const [isEventOpen, setIsEventOpen] = useState(false)
   const [isAddChannelOpen, setIsAddChannelOpen] = useState(false);
+  const [isJoinServerOpen, setIsJoinServerOpen] = useState(false)
 
   const [channels, setChannels] = useState([]);
 
+  
 
   console.log(friendInfo)
   console.log(isEventOpen
@@ -111,11 +115,11 @@ export function LayOut2({Component1, Component2, Component3}) {
     </div> */}
     <div className="flex flex-row">
       <div className="h-screen w-20">
-      <ServerSideBar servers={servers} setIsOpen={setIsOpen}/>
+      <ServerSideBar servers={servers} setIsOpen={setIsOpen} setIsJoinServerOpen={setIsJoinServerOpen}/>
       </div>
       <div className="h-screen w-72">
-      {(Component3 === undefined)?(<SideBar  directMessage = {directMessages} setDirectMessages={setDirectMessages} setFriendInfo={setFriendInfo}  isRequesting={isRequesting}
-            setIsRequesting={setIsRequesting}/>):<Component3 channels={channels} setChannels={setChannels} serverId={serverId} setIsEventOpen={setIsEventOpen} setIsAddChannelOpen={setIsAddChannelOpen}/> }
+      {(Component3 === undefined)?(<SideBar events={events} setEvents={setEvents} directMessage = {directMessages} setDirectMessages={setDirectMessages} setFriendInfo={setFriendInfo}  isRequesting={isRequesting}
+            setIsRequesting={setIsRequesting}/>):<Component3 channels={channels} setChannels={setChannels} serverId={serverId} setIsEventOpen={setIsEventOpen} setIsAddChannelOpen={setIsAddChannelOpen} events={events} setEvents={setEvents}/> }
       </div>
       <div className="flex flex-col w-full">
       <div className="h-14 ">
@@ -126,7 +130,7 @@ export function LayOut2({Component1, Component2, Component3}) {
             <Component1 tabs={tabs} setTabs={setTabs} friendChat={friendChat} setFriendChat={setFriendChat} setFriendInfo={setFriendInfo} isRequesting={isRequesting}
             setIsRequesting={setIsRequesting} setDirectMessages={setDirectMessages}/>
         </div>
-        <div className="lg:w-3/12 w-0 h-auto bg-gray-50 dark:bg-lightbase">
+        <div className="lg:w-3/12 w-0 lg:block sm:hidden h-auto bg-gray-50 dark:bg-lightbase">
           {(Component2 === undefined)?
            (Object.keys(friendInfo).length !== 0 ? 
             <FriendInfo friendInfo={friendInfo} friends={friends} servers ={servers} /> : <div className="flex flex-col items-center justify-center mt-20">
@@ -140,10 +144,13 @@ export function LayOut2({Component1, Component2, Component3}) {
          isOpen && <CreateServer setIsOpen={setIsOpen} loadServers={loadServers}/>
       }
       {
-         isEventOpen && <CreateEvent setIsEventOpen={setIsEventOpen} />
+         isEventOpen && <CreateEvent setIsEventOpen={setIsEventOpen} serverId={serverId} events={events} setEvents={setEvents}/>
       }
       {
          isAddChannelOpen && <AddChannel setIsAddChannelOpen={setIsAddChannelOpen} serverId={serverId} setChannels={setChannels}/>
+      }
+      {
+         isJoinServerOpen && <JoinServer setIsJoinServerOpen={setIsJoinServerOpen} loadServers={loadServers}/>
       }
     </div>
     </>

@@ -120,6 +120,10 @@ const sendChannelMessage = (userId, serverId, channelId, content) => {
     return apiClient.post(`/user/${userId}/${serverId}/${channelId}/sendMessage`, {content: content});
 };
 
+const editChannelMessages = (userId, serverId, channelId, messageId, newContent) => {
+    return apiClient.patch(`/user/${userId}/${serverId}/${channelId}/editChannelMessage`, {messageId: messageId, newContent: newContent})
+}
+
 const blockUser = (userId, data) => {
     return apiClient.patch(`/user/${userId}/blockUser`,  data)
 }
@@ -127,6 +131,19 @@ const blockUser = (userId, data) => {
 
 const createChannel = (userId,serverId, data) => {
     return apiClient.post(`/user/${userId}/${serverId}/createChannel`, data);
+}
+
+const joinServer = (userId, data) => {
+    return apiClient.post(`/user/${userId}/joinServer`,data)
+}
+
+const createEvent = (userId, serverId, data) => {
+    console.log(data)
+    return apiClient.post(`/user/${userId}/${serverId}/createEvent`,data)
+}
+
+const getAllEvents = (userId, serverId) => {
+    return apiClient.get(`/user/${userId}/${serverId}/getAllEvents`);
 }
 
 export {
@@ -154,6 +171,10 @@ export {
     getAllParticipants,
     getChannelChatMessages,
     sendChannelMessage,
+    editChannelMessages,
     blockUser, 
-    createChannel
+    createChannel,
+    joinServer, 
+    createEvent,
+    getAllEvents
 };

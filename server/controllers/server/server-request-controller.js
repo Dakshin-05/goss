@@ -27,7 +27,7 @@ export const joinServerViaRequest = asyncHandler(async (req, res) => {
             }
             try {
                 await db.query(`insert into server_request (user_id, server_id) values ($1, $2);`, [userId, requestedServer.id])
-                return req.status(200).json({message: "Request send successfully"})
+                return res.status(200).json({message: "Request send successfully"})
             } catch (err) {
                 return res.status(500).json( new ApiError(500) );
             }
@@ -35,6 +35,45 @@ export const joinServerViaRequest = asyncHandler(async (req, res) => {
             return res.status(500).json( new ApiError(500) );
         } 
     } catch(err) {
+        return res.status(500).json( new ApiError(500) );
+    }
+});
+
+export const joinServer = asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    // const { requestedServerId } = req.body;
+    const {requestedServerName} = req.body;
+
+    if(req.params.userId !== req.user.id) {
+        return res.status(403).json(new ApiResponse(403, {}, "User not allowed to access this route"));
+    }
+
+    try {
+        const requestedServerQuery = await db.query(`select * from server where server_name = $1;`, [requestedServerName]);
+        console.log(requestedServerName)
+        if(requestedServerQuery.rows.length === 0) {
+            return res.status(404).json({message: "Requested server not found"})
+        }
+        try {
+            const alreadyMember = await db.query(`select * from server_member where server_id = $1 and member_id = $2;`, [requestedServerQuery.rows[0].server_id, userId,]);
+            if(alreadyMember.rowCount !== 0) {
+                return res.status(201).json({message: "Already a member of this server"});
+            }
+            try {
+                await db.query(`insert into server_member (server_id, member_id, role_name) values ($1, $2, $3);`, [requestedServerQuery.rows[0].server_id,userId,"member"])
+                return res.status(200).json(new ApiResponse(200, {}, "Request send successfully"))
+            } catch (err) {
+                console.log(err)
+
+                return res.status(500).json( new ApiError(500) );
+            }
+        } catch (err) {
+            console.log(err)
+            return res.status(500).json( new ApiError(500) );
+        } 
+    } catch(err) {
+        console.log(err)
+
         return res.status(500).json( new ApiError(500) );
     }
 });
@@ -58,7 +97,7 @@ export const joinServerViaLink = asyncHandler(async (req, res) => {
             }
             try {
                 await db.query(`insert into server_member(user_id, server_id) values ($1, $2);`, [userId, requestedServer.rows[0].id])
-                return req.status(200).json({message: "User added successfully"})
+                return res.status(200).json({message: "User added successfully"})
             } catch (err) {
                 return res.status(500).json( new ApiError(500) );
             }
@@ -188,3 +227,4 @@ export const addNewParticipantInServer = asyncHandler(async (req, res, next) => 
         return res.status(500).json( new ApiError(500, {}, "1") );
     }
 });
+

@@ -2,7 +2,7 @@ import React from 'react';
 
 const Info = ({ username, discriminator, memberSince }) => {
   return (
-    <div className="text mt-8 mb-4">
+    <div className="text mt-10 mb-4">
       <h2 className="text-xl font-bold">{username}</h2>
       <p className="text-gray-400">#{discriminator}</p>
       <hr></hr>

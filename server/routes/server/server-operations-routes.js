@@ -1,7 +1,7 @@
 import {Router} from 'express';
 import { verifyJWT } from '../../middlewares/auth-middlewares.js';
 
-import { channelDetails, createChannel, createServer, deleteServer, getAllParticipants, getAllServers, getChannelChats, getServerDetails, renameChannel, renameServer, transferOwnerShip, sendMessage } from '../../controllers/server/server-operation-controller.js';
+import { channelDetails, createChannel, createServer, deleteServer, getAllParticipants, getAllServers, getChannelChats, getServerDetails, renameChannel, renameServer, transferOwnerShip, sendMessage, getAllEvents, createEvent, editChannelMessage } from '../../controllers/server/server-operation-controller.js';
 
 
 const router = Router({ mergeParams: true });
@@ -21,6 +21,9 @@ router.patch('/:serverId/transferOwnerShip', transferOwnerShip);
 router.post('/:serverId/createChannel', createChannel);
 router.get('/:serverId/:channelId/getChannelChats', getChannelChats);
 router.post('/:serverId/:channelId/sendMessage', sendMessage);
+router.patch('/:serverId/:channelId/editChannelMessage', editChannelMessage)
+router.get('/:serverId/getAllEvents', getAllEvents);
+router.post('/:serverId/createEvent', createEvent);
 
 
 export default router;

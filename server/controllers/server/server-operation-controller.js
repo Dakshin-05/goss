@@ -195,7 +195,7 @@ export const getChannelChats = asyncHandler( async(req, res) => {
                 }
 
                 try {
-                    const channelMessages = await db.query(`SELECT * FROM channel_message where channel_id=$1;`, [channelId])
+                    const channelMessages = await db.query(`SELECT m.*, p.name FROM channel_message m join profile p on m.sender_id = p.id where channel_id=$1;`, [channelId])
                     if(channelDetailQuery.rowCount === 0){
                         return res.status(200).json( new ApiResponse(200, {}, "No messages yet!..."))
                     }
@@ -233,11 +233,9 @@ export const sendMessage = asyncHandler(async (req, res) => {
     }
 
     try {
-        console.log("3")
         const serverQuery = await db.query("SELECT * FROM server WHERE server_id = $1", [serverId]);
         
         if (serverQuery.rowCount === 0) {
-            console.log("1")
             return res.status(404).json(new ApiError(404, {}, "Server does not exist"));
         }
 
@@ -245,14 +243,13 @@ export const sendMessage = asyncHandler(async (req, res) => {
             const channelQuery = await db.query("SELECT * FROM channels WHERE server_id = $1 and channel_id = $2", [serverId, channelId]);
         
             if (channelQuery.rowCount === 0) {
-                console.log("2")
                 return res.status(404).json(new ApiError(404, {}, "Channel does not exist..."));
             }
 
             try {
                 const message = await db.query("INSERT INTO channel_message (channel_id, sender_id, content) VALUES ($1, $2, $3) RETURNING *", [channelId, req.user.id, content]);
                
-                emitSocketEvent(req, channelId, ChatEventEnum.MESSAGE_RECEIVED_EVENT, message.rows[0]);
+                emitSocketEvent(req, channelId, ChatEventEnum.CHANNEL_MESSAGE_RECEIVED_EVENT, message.rows[0]);
             
                 return res.status(200).json(new ApiResponse(200, { message: message.rows[0] }, "Message saved successfully"));
             } catch (err) {
@@ -266,6 +263,68 @@ export const sendMessage = asyncHandler(async (req, res) => {
     } catch (err) {
         return res.status(500).json(new ApiResponse(500, {}, "Something went wrong"));
     }
+});
+
+export const editChannelMessage = asyncHandler(async(req, res, next) =>{
+    const {serverId, channelId} = req.params;
+    const {messageId} = req.body;
+    const {newContent} = req.body
+    console.log(messageId)
+    if(req.params.userId !== req.user.id){
+        return res.status(403).json(new ApiError(403,{}, "User not allowed to access this route"));
+    }
+
+    console.log(newContent);
+    if (!newContent) {
+        return res.status(400).json(new ApiError(400, {}, "Message content is required"));
+    }
+
+    try {
+        const serverQuery = await db.query("SELECT * FROM server WHERE server_id = $1", [serverId]);
+        
+        if (serverQuery.rowCount === 0) {
+            return res.status(404).json(new ApiError(404, {}, "Server does not exist"));
+        }
+
+        try{
+            const channelQuery = await db.query("SELECT * FROM channels WHERE server_id = $1 and channel_id = $2", [serverId, channelId]);
+        
+            if (channelQuery.rowCount === 0) {
+                return res.status(404).json(new ApiError(404, {}, "Channel does not exist..."));
+            }
+
+            try{
+                const messagesQuery = await db.query("select * from channel_message where id=$1 and sender_id=$2", [messageId, req.user.id]);
+    
+                if(messagesQuery.rowCount === 0){
+                    return res.status(404).json( new ApiResponse(404, {}, "Message not found or You are not the sender of the message!!"))
+                }
+
+                try{
+                    const editMessageQuery = await db.query("update channel_message set updated_at = current_timestamp, content = $2 where id=$1",[messageId, newContent]);
+
+
+                    emitSocketEvent(req, channelId, ChatEventEnum.CHANNEL_MESSAGE_EDITED_EVENT, {
+                        messageId: messageId,
+                        newContent: newContent
+                    });
+                    return res.status(200).json( new ApiResponse(200, {}, "Message edited successfully"))
+
+                } catch(err) {
+                    console.log(err)
+                    return res.status(500).json( new ApiResponse(500, {}, "Something went wrong!!"))
+                }
+            } catch(err) {
+                return res.status(500).json( new ApiResponse(500, {}, "Something went wrong!!"))
+            }
+
+        } catch(err) {
+            return res.status(500).json( new ApiResponse(500, {}, "Something went wrong!!"))
+        }
+    } catch(err) {
+        return res.status(500).json( new ApiResponse(500, {}, "Something went wrong!!"))
+    }
+
 });
 
 export const renameServer = asyncHandler(async(req, res, next) => {
@@ -533,5 +592,81 @@ export const createRole = asyncHandler(async (req, res) => {
         }
     } catch(err) {
         return res.status(500).json( new ApiError(500) );
+    }
+})
+
+export const createEvent = asyncHandler(async(req, res, next)=> {
+    const {serverId, userId} = req.params;
+    console.log(req.body, serverId, userId)
+    const {event, description, startDate, startTime, location} = req.body;
+    try {
+        const serverDetailsQuery = await db.query("SELECT * from Server where server_id = $1;", [serverId]);
+        
+        if( serverDetailsQuery.rowCount === 0) {
+            return res.status(404).json(new ApiError("Server not found") );
+        } 
+        try{
+            const memberQuery = await db.query("SELECT * from server_member where server_id = $1 AND member_id = $2;", [serverId, userId]);
+            if( memberQuery.rowCount === 0) {
+                return res.status(401).json( new ApiError(401, "User not a part of the channel"));
+            }
+            const member = memberQuery.rows[0];
+            try {
+                const hasPermissionQuery = await db.query("SELECT * from server_roles WHERE server_id = $1 AND role_name = $2 AND can_create_events = true", [serverId, member.role_name]);
+                if( hasPermissionQuery.rowCount === 0) {
+                    return res.status(403).json( new ApiError(403, {}, "User doesn't possess the permission to create events") )
+                }
+                try {
+                    await db.query("INSERT INTO event(event_name, description, start_date, start_time, server_id, location) VALUES($1, $2, $3, $4, $5, $6);", [event, description, startDate, startTime, serverId, location]);
+                    return res.status(200).json( new ApiResponse(200, {} , "Event created successfully") );
+                } catch(err) {
+                    console.log(err);
+
+                    return res.status(500).json( new ApiError(500) );
+                }
+            } catch(err) {
+                console.log(err);
+                return res.status(500).json( new ApiError(500) );
+            }
+         }catch(err){
+            console.log(err);
+
+            return res.status(500).json( new ApiError(500) );
+        }
+    } catch(err){
+        console.log(err);
+
+        return res.status(500).json( new ApiError(500) );  
+    }
+})
+
+export const getAllEvents = asyncHandler(async(req, res) => {
+    const {userId, serverId} = req.params;
+    try {
+        const serverDetailsQuery = await db.query("SELECT * from Server where server_id = $1;", [serverId]);
+        
+        if( serverDetailsQuery.rowCount === 0) {
+            return res.status(404).json(new ApiError("Server not found") );
+        } 
+        try{
+            const memberQuery = await db.query("SELECT * from server_member where server_id = $1 AND member_id = $2;", [serverId, userId]);
+            if( memberQuery.rowCount === 0) {
+                return res.status(401).json( new ApiError(401, "User not a part of the channel"));
+            }
+            const member = memberQuery.rows[0];
+            try{
+                const eventsQuery = await db.query("SELECT * from event where server_id = $1;", [serverId]);
+                return res.status(200).json( new ApiResponse(200, {eventDetails:eventsQuery.rows}, "Events fetched successfully"));
+            } catch (err) {
+                console.log(err)
+                return res.status(500).json( new ApiError(500) );  
+            }
+        } catch(err) {
+            console.log(err)
+            return res.status(500).json( new ApiError(500) );  
+        }
+    } catch(err) {
+        console.log(err)
+        return res.status(500).json( new ApiError(500) );  
     }
 })

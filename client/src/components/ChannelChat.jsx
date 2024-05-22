@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { LocalStorage, requestHandler } from '../utils';
-import { deleteMessage, getChat, getChatMessages, sendMessage, editMessages, getChannelChatMessages, sendChannelMessage } from '../api';
+import { deleteMessage, getChat, getChatMessages, sendMessage, editMessages, getChannelChatMessages, sendChannelMessage, editChannelMessages } from '../api';
 import { useLocation, useParams } from 'react-router-dom';
 import TextChatBubble from './TextChatBubble';
 
@@ -11,13 +11,10 @@ import TextChatBubble from './TextChatBubble';
 const CONNECTED_EVENT = "connected";
 const DISCONNECT_EVENT = "disconnect";
 const JOIN_CHANNEL_CHAT_EVENT = "joinChannelChat";
-const TYPING_EVENT = "typing";
-const STOP_TYPING_EVENT = "stopTyping";
-const MESSAGE_RECEIVED_EVENT = "messageReceived";
-const LEAVE_CHAT_EVENT = "leaveChat";
-const UPDATE_GROUP_NAME_EVENT = "updateGroupName";
-const MESSAGE_DELETED_EVENT = "messageDeleted";
-const MESSAGE_EDITED_EVENT= "messageEdited"
+const CHANNEL_MESSAGE_RECEIVED_EVENT = "channelMessageReceived";
+const CHANNEL_MESSAGE_DELETED_EVENT = "channelMessageDeleted";
+const CHANNEL_MESSAGE_EDITED_EVENT = "channelMessageEdited";
+
 let state;
 let set = false;
 
@@ -71,16 +68,14 @@ const ChannelChat = ()  => {
   }
 
   const sendEditedMessage = async (messageId, newContent) => {
-      if (!currChat.id) return alert("No chat is selected");
   
       if (!socket) return alert("Socket not available");
   
   
       requestHandler(
-        async () => await editMessages(user.id, currChat.id , messageId, newContent),
+        async () => await editChannelMessages(user.id, serverId, channelId, messageId, newContent),
         setLoadingMessages,
         (res) => {
-          const { data } = res;
           setMessages((prev)=> prev.map(m=>({...m, content: messageId === m.id ?newContent : m.content })))
           setEditMessage(-1);
           setCurrMessage("")
@@ -173,20 +168,22 @@ const ChannelChat = ()  => {
     console.log("disconnected event")
   }
 
+  // console.log(messages)
+
   useEffect(()=>{
 
     socket.on(CONNECTED_EVENT,onConnect);
     socket.on(DISCONNECT_EVENT, onDisconnect);
-    socket.on(MESSAGE_RECEIVED_EVENT, onMessageReceived);
-    socket.on(MESSAGE_DELETED_EVENT, onMessageDeleted);
-    socket.on(MESSAGE_EDITED_EVENT, onMessageEdit);
+    socket.on(CHANNEL_MESSAGE_RECEIVED_EVENT, onMessageReceived);
+    socket.on(CHANNEL_MESSAGE_DELETED_EVENT, onMessageDeleted);
+    socket.on(CHANNEL_MESSAGE_EDITED_EVENT, onMessageEdit);
     
     return () => {
       socket.off(CONNECTED_EVENT, onConnect);
       socket.off(DISCONNECT_EVENT, onDisconnect);
-      socket.off(MESSAGE_RECEIVED_EVENT, onMessageReceived);
-      socket.off(MESSAGE_DELETED_EVENT, onMessageDeleted);
-      socket.off(MESSAGE_EDITED_EVENT, onMessageEdit);
+      socket.off(CHANNEL_MESSAGE_RECEIVED_EVENT, onMessageReceived);
+      socket.off(CHANNEL_MESSAGE_DELETED_EVENT, onMessageDeleted);
+      socket.off(CHANNEL_MESSAGE_EDITED_EVENT, onMessageEdit);
     };
   },[socket]);
 
@@ -216,10 +213,10 @@ const ChannelChat = ()  => {
            
             <div key={m.id} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} my-3`}>
               <TextChatBubble mId={m.id}
-                username={isCurrentUser ? "You" : "the other one"}
+                username={isCurrentUser ? "You" : m.name}
                 timestamp={m.created_at}
                 message={m.content}
-                deliveredStatus= {m.read_at !== null ? "read" : "sent"}
+                deliveredStatus= {m.read_at !== null ? "" : ""}
                 className="inline-block "
                 isOptionsOpen={isOptionsOpen}
                 setIsOptionsOpen={setIsOptionsOpen}

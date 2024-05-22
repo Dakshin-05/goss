@@ -7,14 +7,27 @@ import { MdEvent } from "react-icons/md";
 import { GrChannel } from "react-icons/gr";
 import { useAuth } from '../context/AuthContext';
 import { requestHandler } from '../utils';
-import { getServerDetails } from '../api';
+import { getAllEvents, getServerDetails } from '../api';
 import { IoMdAdd } from "react-icons/io";
+import EventCard from './EventCard';
 
 
-function SideBar({channels, setChannels, serverId, setIsEventOpen, setIsAddChannelOpen}) {
+function SideBar({channels, setChannels, serverId, setIsEventOpen, setIsAddChannelOpen, events, setEvents}) {
 
    const {user} = useAuth();
    const navigate = useNavigate();
+   
+   const loadEvents = useCallback(async() => {
+      await requestHandler(
+        async () => await getAllEvents(user.id, serverId),
+        null,
+        (res) => {
+            console.log(res)
+            setEvents(res.data.eventDetails)
+        },
+        alert
+      );
+     }, [serverId]);
 
    const loadChannels = useCallback(async () => {
        await requestHandler(
@@ -30,12 +43,16 @@ function SideBar({channels, setChannels, serverId, setIsEventOpen, setIsAddChann
 
     useEffect(() =>{
        loadChannels();
-    },[loadChannels])
+       loadEvents();
+    },[loadChannels, loadEvents])
 console.log("channels", channels)
+
+
 
 const redirectHome = () => {
     navigate('/home')
  }
+ console.log(events)
   return (
     <>
      <aside id="separator-sidebar" class="h-screen transition-transform -translate-x-full sm:translate-x-0 w-full " aria-label="Sidebar">
@@ -53,7 +70,7 @@ const redirectHome = () => {
                <li onClick={()=>{setIsEventOpen(true)}}>
                   <div class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-hoverbase group mb-4" >
                   <MdEvent size={20}/>
-                     <span class="flex-1 ms-3 whitespace-nowrap" >Events</span>
+                     <span class="flex-1 ms-3 whitespace-nowrap" >Events {events.length &&  <span className='text-sidebarblue'>{events.length}</span> }</span>
                      
                   </div>
                </li>
@@ -82,10 +99,14 @@ const redirectHome = () => {
                 }
                
             </ul>
-            
-            <ul>
-               {/* <UserInfo /> */}
-            </ul>
+            {
+events.length !== 0 &&
+            <div className='fixed bottom-0 h-56 select-none overflow-y-scroll no-scrollbar lg:w-56 mb-2  border-2 border-white rounded-lg -ml-1 space-y-2 font-medium mt-2'>
+      
+               {
+                  events.length === 0 ? <></>: events.map((event)=>  <> <EventCard event={event}/><hr/></>)
+               }            </div>
+}
             
          </div>
       </aside>

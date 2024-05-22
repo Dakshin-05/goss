@@ -93,7 +93,7 @@ export const deleteMessage = asyncHandler(async(req, res, next) =>{
             }
 
             try{
-                const deleteMessageQuery = db.query("delete from message where id=$1",[messageId]);
+                const deleteMessageQuery = await db.query("delete from message where id=$1",[messageId]);
                 emitSocketEvent(req, recipientId, ChatEventEnum.MESSAGE_DELETED_EVENT, messageId);
                 return res.status(200).json( new ApiResponse(200, {}, "Messages deleted successfully"))
 
@@ -138,7 +138,7 @@ export const editMessage = asyncHandler(async(req, res, next) =>{
             }
 
             try{
-                const editMessageQuery = db.query("update message set updated_at = current_timestamp, content = $2 where id=$1",[messageId, newContent]);
+                const editMessageQuery = await db.query("update message set updated_at = current_timestamp, content = $2 where id=$1",[messageId, newContent]);
                 emitSocketEvent(req, recipientId, ChatEventEnum.MESSAGE_EDITED_EVENT, {
                     messageId: messageId,
                     newContent: newContent

@@ -6,7 +6,7 @@ import { MdExplore } from "react-icons/md";
 import { useNavigate } from 'react-router-dom';
 
 
-function ServerSideBar({servers, setIsOpen, showServer}) {
+function ServerSideBar({servers, setIsOpen, showServer, setIsJoinServerOpen}) {
 
     // console.log(servers)
     const [toolTip, setToolTip] = useState(-1)
@@ -49,7 +49,7 @@ function ServerSideBar({servers, setIsOpen, showServer}) {
 </svg>
 
       </div>
-      <div class="m-2 w-14 flex justify-center items-center h-14 rounded-e-2xl rounded-s-2xl  bg-sidebarblue " oncl>
+      <div class="m-2 w-14 flex justify-center items-center h-14 rounded-e-2xl rounded-s-2xl  bg-sidebarblue " onClick={()=>{setIsJoinServerOpen(true)}}>
     <MdExplore size={24}/>
       </div>
 <hr />

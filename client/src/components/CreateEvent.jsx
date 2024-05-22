@@ -1,12 +1,17 @@
 import React, { useState } from 'react'
 import { IoMdClose } from "react-icons/io";
-export default function CreateEvent({setIsEventOpen}) {
+import { requestHandler } from '../utils';
+import { createEvent } from '../api';
+import { useAuth } from '../context/AuthContext';
+export default function CreateEvent({setIsEventOpen, loadEvents, serverId, events, setEvents}) {
+  const {user} = useAuth();
 
     const [data, setData] = useState({
         event: "",
         description: "",
         startDate: "",
-        startTime: ""
+        startTime: "", 
+        location: "",
       });
 
     
@@ -21,6 +26,19 @@ export default function CreateEvent({setIsEventOpen}) {
       const handleSubmit = async () => {
         // await createEvent(data);
         console.log(data)
+        await requestHandler(
+          async() => await createEvent(user.id, serverId, data),
+          null,
+          (res) => {
+            console.log(res)
+            setIsEventOpen(false);
+            setEvents(res.data.eventDetails)
+            loadEvents()
+          },
+          alert
+        );
+
+
       }
     
 
@@ -54,6 +72,10 @@ export default function CreateEvent({setIsEventOpen}) {
         <input type="time" id="time" class="rounded bg-gray-50 border text-gray-900 leading-none focus:ring-blue-500 focus:border-blue-500 block flex-1 w-full text-md border-gray-300 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" min="09:00" max="18:00" required value={data.startTime} onChange={handleDataChange("startTime")}/>
       
     </div>
+    <div class="mb-6">                <label for="email" class="mt-5 block mb-2 text-md font-medium text-gray-900 dark:text-white">Event Location</label>
+
+<input type="text" id="email" class="  bg-gray-50 border border-gray-300 text-gray-900 text-md rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 " placeholder="Where ?" value={data.location} required onChange={handleDataChange("location")}/>
+</div> 
 
 
 
